@@ -30,7 +30,7 @@ const SankeyChart = ({ data }) => {
 
   if (!chartData || chartData.length <= 1) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',width:'800' }}>
         <Typography color="text.secondary" textAlign="center">
           No fund flow data available.
           <br />

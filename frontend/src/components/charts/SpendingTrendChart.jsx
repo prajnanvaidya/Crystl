@@ -55,7 +55,7 @@ const SpendingTrendChart = ({ data, groupBy, handleFilterChange }) => {
       <ResponsiveContainer>
         <BarChart
           data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 0, right: 30, left: 20, bottom: 5 }}
         >
           <XAxis dataKey="name" />
           <YAxis tickFormatter={(value) => `$${(value / 1000)}k`} />

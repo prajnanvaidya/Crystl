@@ -156,7 +156,33 @@ const DepartmentDashboard = () => {
   };
   
   const handleTrendFilterChange = (newGroupBy) => {
-    if (newGroupBy !== null) setTrendGroupBy(newGroupBy);
+    if (newGroupBy !== null) {
+      setTrendGroupBy(newGroupBy);
+      // Refetch analytics data for the selected report with new groupBy
+      if (selectedReport) {
+        setIsAnalyticsLoading(true);
+        setError('');
+        const fetchAnalytics = async () => {
+          try {
+            const institutionId = user.linkedInstitution;
+            const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
+            const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
+            const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${newGroupBy}`);
+            const [flowchartRes, deptShareRes, trendRes] = await Promise.all([flowchartPromise, deptSharePromise, spendingTrendPromise]);
+            setAnalyticsData({
+              flowchart: flowchartRes.data,
+              departmentShare: deptShareRes.data.departmentShares,
+              spendingTrend: trendRes.data.spendingTrend,
+            });
+          } catch (err) {
+            setError(getErrorMessage(err, 'Could not load analytics for the selected report.'));
+          } finally {
+            setIsAnalyticsLoading(false);
+          }
+        };
+        fetchAnalytics();
+      }
+    }
   };
 
   const handleRefreshData = async () => {
