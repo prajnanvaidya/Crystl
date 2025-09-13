@@ -162,6 +162,10 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: 'user logged out!' });
 };
 
+const showCurrentUser = async (req, res) => {
+  res.status(StatusCodes.OK).json({ user: req.user });
+};
+
 
 module.exports = {
   registerInstitution,
@@ -171,4 +175,5 @@ module.exports = {
   registerUser,
   loginUser,
   logout,
+  showCurrentUser,
 };
