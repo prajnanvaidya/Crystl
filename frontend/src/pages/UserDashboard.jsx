@@ -51,16 +51,17 @@ const UserDashboard = () => {
     // For now, we'll use the same mock data.
     const fetchInstitutions = async () => {
       try {
-        // const response = await api.get('/public/institutions'); // Example future endpoint
-        // setInstitutions(response.data.institutions);
-        const mockInstitutions = [
-            { _id: 'INST_ID_123', name: 'City University of Veriflow' },
-            { _id: 'INST_ID_456', name: 'Veriflow General Hospital' },
-            { _id: 'INST_ID_789', name: 'Public Works Department of Veriflow' },
-        ];
-        setInstitutions(mockInstitutions);
+        const response = await api.get('/public/institutions');
+        if (response.data && Array.isArray(response.data.institutions)) {
+            setInstitutions(response.data.institutions);
+        } else {
+            // This case handles if the backend sends an empty or unexpected response.
+            setInstitutions([]);
+            console.warn('Backend response did not contain an institutions array:', response.data);
+        }
       } catch (err) {
-        setError('Failed to load institutions.');
+        setError('Failed to load institutions from the server.');
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
