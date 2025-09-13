@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { Box, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { BarChart as BarChartIcon } from '@mui/icons-material';
-
+import { useCurrency } from '../../context/CurrencyContext'; // Import the hook
 const RoundedBar = (props) => {
   const { fill, x, y, width, height } = props;
   const radius = 6;
@@ -17,11 +17,12 @@ const RoundedBar = (props) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
+  const { formatAmount } = useCurrency();
   if (active && payload && payload.length) {
     return (
       <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-200">
         <p className="text-sm font-semibold text-gray-800">{label}</p>
-        <p className="text-blue-600 font-medium">Spending: ${payload[0].value.toLocaleString()}</p>
+        <p className="text-blue-600 font-medium">Spending: {formatAmount(payload[0].value)}</p>
       </div>
     );
   }

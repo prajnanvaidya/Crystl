@@ -21,7 +21,7 @@ import {
   IoChevronBack,
   IoChevronForward
 } from 'react-icons/io5';
-
+import { useCurrency } from '../context/CurrencyContext';
 // Import Chart Components
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
@@ -34,6 +34,7 @@ const DepartmentDashboard = () => {
   
   // State for Approvals Tab
   const [pendingTransactions, setPendingTransactions] = useState([]);
+   const { currency, toggleCurrency, formatAmount } = useCurrency();
   const [isApprovalsLoading, setIsApprovalsLoading] = useState(true);
   const [actionInProgress, setActionInProgress] = useState(null);
   const [linkedDepartments, setLinkedDepartments] = useState([]);
@@ -317,14 +318,24 @@ const DepartmentDashboard = () => {
                   <span>Open Chat</span>
                 </button>
               )}
-              <button
-                onClick={handleRefreshData}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                title="Refresh data"
-              >
-                <IoReloadCircle className="text-lg" />
-                <span>Refresh</span>
-              </button>
+              <div className="flex items-center gap-4">
+  <button
+    onClick={toggleCurrency}
+    className="inline-flex items-center px-4 py-2.5 rounded-lg shadow-sm text-sm font-medium bg-white border border-gray-300 text-gray-700 font-semibold"
+  >
+    <span>Display as: </span>
+    <span className={`ml-2 px-2 py-1 rounded ${currency === 'USD' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>USD</span>
+    <span className={`px-2 py-1 rounded ${currency === 'INR' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>INR</span>
+  </button>
+  <button
+    onClick={handleRefreshData}
+    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+    title="Refresh data"
+  >
+    <IoReloadCircle className="text-lg" />
+    <span>Refresh</span>
+  </button>
+</div>
             </div>
           </div>
         </div>
@@ -421,7 +432,7 @@ const DepartmentDashboard = () => {
                             <div className="p-5">
                               <div className="flex justify-between items-start mb-3">
                                 <h3 className="text-lg font-semibold text-gray-900">{transaction.description}</h3>
-                                <p className="text-lg font-semibold text-[#0B95D6]">${transaction.amount.toLocaleString()}</p>
+                                <p className="text-lg font-semibold text-[#0B95D6]">{formatAmount(transaction.amount)}</p>
                               </div>
                               <p className="text-gray-600">
                                 From: <span className="font-medium text-gray-900">{transaction.institution.name}</span>
@@ -696,8 +707,8 @@ const DepartmentDashboard = () => {
                                 {transaction.description}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                ${transaction.amount.toLocaleString()}
-                              </td>
+  {formatAmount(transaction.amount)}
+</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                   transaction.type === 'Allocation' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'

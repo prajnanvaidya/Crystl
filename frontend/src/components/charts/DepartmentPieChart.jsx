@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
 import { Typography } from '@mui/material'; // Using MUI for consistent typography
-
+import { useCurrency } from '../../context/CurrencyContext'; // Import the hook
 // A more modern and vibrant color palette
 const COLORS = ['#1e88e5', '#00acc1', '#ffc107', '#7cb342', '#f4511e', '#5e35b1'];
 
@@ -57,12 +57,13 @@ const renderActiveShape = (props) => {
 
 // --- A custom component for the Tooltip ---
 const CustomTooltip = ({ active, payload }) => {
+  const { formatAmount } = useCurrency();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-200">
         <p className="font-semibold text-gray-800">{data.departmentName}</p>
-        <p className="text-blue-600">Total Spent: ${data.totalSpent.toLocaleString()}</p>
+        <p className="text-blue-600">Total Spent: {formatAmount(data.totalSpent)}</p>
       </div>
     );
   }

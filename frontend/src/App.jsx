@@ -3,7 +3,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
-
+import { CurrencyProvider } from './context/CurrencyContext';
 // --- Component and Page Imports ---
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute'; 
@@ -30,6 +30,7 @@ function App() {
 
   return (
     <Router>
+      <CurrencyProvider> {/* <--- WRAP IT HERE */}
       <Routes>
         <Route element={<Layout />}>
           {/* --- Public Routes --- */}
@@ -100,6 +101,7 @@ function App() {
             />
         </Route>
       </Routes>
+      </CurrencyProvider> {/* <--- AND CLOSE IT HERE */}
     </Router>
   );
 }

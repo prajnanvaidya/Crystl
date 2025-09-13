@@ -12,7 +12,7 @@ import {
   FaSpinner,
   FaSearch
 } from 'react-icons/fa';
-
+import { useCurrency } from '../context/CurrencyContext';
 // Import Chart Components
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
@@ -25,7 +25,7 @@ const PublicInstitutionPage = () => {
   const { institutionId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-
+const { currency, toggleCurrency, formatAmount } = useCurrency();
   // State Management
   const [pageData, setPageData] = useState({
     institution: null,
@@ -224,6 +224,28 @@ const PublicInstitutionPage = () => {
           <div className="w-24 h-1 bg-blue-600 mx-auto mt-4 rounded-full"></div>
         </div>
         {/* Back button*/}
+        <div className="flex-shrink-0 mt-1 flex items-center gap-4">
+  <button
+    onClick={toggleCurrency}
+    className="inline-flex items-center px-4 py-2 rounded-lg shadow-sm text-sm font-medium bg-white border border-gray-200 text-sky-700 font-semibold"
+  >
+    <span>Display as: </span>
+    <span className={`ml-2 px-2 py-1 rounded ${currency === 'USD' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>USD</span>
+    <span className={`px-2 py-1 rounded ${currency === 'INR' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>INR</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={handleBackToDashboard}
+    aria-label="Back to Dashboard"
+    className="inline-flex items-center px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300 bg-white border border-gray-200"
+  >
+    <svg className="w-4 h-4 mr-2 text-sky-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+    <span className="text-sky-700 font-semibold">Back to Dashboard</span>
+  </button>
+</div>
           <div className="flex-shrink-0 mt-1">
             <button
               type="button"
@@ -496,7 +518,8 @@ const PublicInstitutionPage = () => {
                                 <td className="py-4 px-4 whitespace-nowrap text-sm text-gray-800">{t.department?.name}</td>
                                 <td className="py-4 px-4 whitespace-nowrap text-sm text-gray-800">{t.recipient || t.vendor || 'N/A'}</td>
                                 <td className="py-4 px-4 text-sm text-gray-800">{t.description}</td>
-                                <td className="py-4 px-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">${t.amount.toLocaleString()}</td>
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
+  {formatAmount(t.amount)}</td>
                                 <td className="py-4 px-4 whitespace-nowrap text-sm text-center">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${t.type === 'Allocation' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                                         {t.type}

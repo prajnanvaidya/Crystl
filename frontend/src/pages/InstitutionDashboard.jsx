@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-
+import { useCurrency } from '../context/CurrencyContext';
 // --- Icon Imports ---
 import {
   Add as AddIcon,
@@ -30,6 +30,7 @@ import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 const InstitutionDashboard = () => {
   // --- STATE MANAGEMENT ---
   const { user } = useAuth();
+  const { currency, toggleCurrency, formatAmount } = useCurrency();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -244,14 +245,24 @@ const InstitutionDashboard = () => {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 leading-tight">Welcome, {user?.name}</h1>
-              <p className="mt-1 text-md text-gray-500">Here’s your institution’s financial command center.</p>
-            </div>
-            <button className="mt-4 sm:mt-0 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg" onClick={() => setIsModalOpen(true)}>
-              <AddIcon className="mr-2" /> Create New Report
-            </button>
-          </div>
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900 leading-tight">Welcome, {user?.name}</h1>
+    <p className="mt-1 text-md text-gray-500">Here’s your institution’s financial command center.</p>
+  </div>
+  <div className="flex items-center gap-4 mt-4 sm:mt-0">
+    <button
+      onClick={toggleCurrency}
+      className="inline-flex items-center px-4 py-2.5 rounded-lg shadow-sm text-sm font-medium bg-white border border-gray-300 text-gray-700 font-semibold"
+    >
+      <span>Display as: </span>
+      <span className={`ml-2 px-2 py-1 rounded ${currency === 'USD' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>USD</span>
+      <span className={`px-2 py-1 rounded ${currency === 'INR' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>INR</span>
+    </button>
+    <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg" onClick={() => setIsModalOpen(true)}>
+      <AddIcon className="mr-2" /> Create New Report
+    </button>
+  </div>
+</div>
         </div>
       </header>
 
@@ -396,7 +407,7 @@ const InstitutionDashboard = () => {
                               {transaction.description}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                              ${transaction.amount.toLocaleString()}
+  {formatAmount(transaction.amount)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                               <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

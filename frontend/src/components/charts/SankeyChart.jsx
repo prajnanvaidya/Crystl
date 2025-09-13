@@ -3,10 +3,11 @@
 import React from 'react';
 import { Chart } from 'react-google-charts';
 import { Box, Typography } from '@mui/material';
-
+import { useCurrency } from '../../context/CurrencyContext';
 // FIX: Removed the 'export' keyword. 
 // This is now a local constant, which is correct.
 const options = {
+  tooltip: { isHtml: true },
   sankey: {
     node: {
       colors: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00c49f'],
@@ -26,6 +27,7 @@ const options = {
 };
 
 const SankeyChart = ({ data }) => {
+  const { formatAmount, currency } = useCurrency();
   const chartData = data?.sankeyData;
 
   if (!chartData || chartData.length <= 1) {
