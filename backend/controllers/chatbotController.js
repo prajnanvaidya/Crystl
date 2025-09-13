@@ -65,18 +65,29 @@ const postMessageToSession = async (req, res) => {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const prompt = `You are a financial assistant for "${institution.name}". Answer the user's LATEST QUESTION based on the "Transaction History" and the "Previous Conversation".
+  const prompt = `
+    You are a helpful and impartial public financial data assistant.
+    Your mission is to answer questions from a member of the public (the "user") about the financial records of an institution named "${institution.name}".
+    
+    You must base your answers STRICTLY on the provided "Transaction History". Do not invent or assume any information.
+    Refer to the "Previous Conversation" to understand the flow of the chat.
+    
+    - When answering, speak directly to the user. Use "you" when referring to the user. YOU ARE NOT TALKING TO THE INSTITUTION, BUT TO THE NORMAL PUBLIC PERSON.
+    - When referring to the institution, use its name, "${institution.name}", or "the institution". Do not use "we" or "our".
+    - If the user's question cannot be answered from the provided data, you must clearly state that the information is not available in the records.
     
     <CONTEXT_START>
+    Transaction History for ${institution.name}:
     ${financialContext}
     
     Previous Conversation:
     ${historyContext}
     <CONTEXT_END>
     
-    LATEST QUESTION: ${question}
+    LATEST QUESTION FROM THE USER: ${question}
     
-    ANSWER:`;
+    YOUR IMPARTIAL ANSWER:
+  `;
 
   const result = await model.generateContent(prompt);
   const response = await result.response;
