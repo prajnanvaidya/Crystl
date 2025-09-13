@@ -8,7 +8,7 @@ const { getFlowchartData } = require('../controllers/flowchartController');
 const { getAllInstitutions, searchTransactions,getInstitutionDetails,
   getPublicLinkedDepartments,
   getPublicReports,
-  getPublicInstitutionAnomalies } = require('../controllers/publicController');
+  getPublicInstitutionAnomalies,getAllTransactionsForInstitution } = require('../controllers/publicController');
 // Public endpoint for institution anomalies
 router.get('/institution/:institutionId/anomalies', getPublicInstitutionAnomalies);
 const { getSpendingTrend, getDepartmentShare } = require('../controllers/analyticsController');
@@ -29,6 +29,6 @@ router.get('/institutions', getAllInstitutions);
 router.get('/institution/:institutionId/transactions', searchTransactions);
 router.get('/analytics/:institutionId/department-share', getDepartmentShare);
 router.get('/analytics/:institutionId/spending-trend', getSpendingTrend);
-
+router.get('/institution/:institutionId/all-transactions', getAllTransactionsForInstitution);
 
 module.exports = router;

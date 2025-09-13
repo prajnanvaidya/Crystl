@@ -9,7 +9,8 @@ import {
   FaChartBar, 
   FaChartPie, 
   FaChartLine,
-  FaSpinner
+  FaSpinner,
+  FaSearch
 } from 'react-icons/fa';
 
 // Import Chart Components
@@ -21,8 +22,6 @@ import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 import FloatingChatbotPublic from '../components/chatbot/FloatingChatbotPublic';
 
 const PublicInstitutionPage = () => {
-  // Anomaly section state
-  const [anomalies, setAnomalies] = useState([]);
   const { institutionId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -36,14 +35,39 @@ const PublicInstitutionPage = () => {
     departmentShare: [],
     spendingTrend: [],
   });
+  const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedReport, setSelectedReport] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [trendGroupBy, setTrendGroupBy] = useState('monthly');
+  const [anomalies, setAnomalies] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
 
   // Data Fetching
+  const fetchTransactions = async () => {
+    try {
+      const transactionsRes = await api.get(`/public/institution/${institutionId}/all-transactions?page=${currentPage}&search=${searchTerm}`);
+      setTransactions(transactionsRes.data.transactions);
+      setFilteredTransactions(transactionsRes.data.transactions);
+      setTotalPages(transactionsRes.data.totalPages);
+      setCurrentPage(transactionsRes.data.currentPage);
+    } catch (err) {
+      setError('Failed to load transactions');
+      console.error("Transaction fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!institutionId) return;
+    fetchTransactions();
+  }, [institutionId, currentPage]);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       if (!institutionId) return;
@@ -55,11 +79,12 @@ const PublicInstitutionPage = () => {
         const reportsPromise = api.get(`/public/institution/${institutionId}/reports`);
         const anomaliesPromise = api.get(`/public/institution/${institutionId}/anomalies`);
 
+
         const [detailsRes, departmentsRes, reportsRes, anomaliesRes] = await Promise.all([
           detailsPromise,
           departmentsPromise,
           reportsPromise,
-          anomaliesPromise,
+          anomaliesPromise
         ]);
 
         setPageData(prev => ({
@@ -131,25 +156,30 @@ const PublicInstitutionPage = () => {
       setError(err.response?.data?.msg || 'Could not start chat session. Please log in.');
     }
   };
-
-  // Back button handler that avoids routing into protected page for anonymous users
-const handleBackToDashboard = () => {
-  // If there's a logged-in user, route them to the dashboard path that matches their role
-  if (user && user.role) {
-    const rolePathMap = {
-      Institution: '/dashboard/institution',
-      Department:  '/dashboard/department',
-      User:        '/dashboard/user',
-    };
-    const target = rolePathMap[user.role] ?? '/institutions'; // fallback to explorer if role unknown
-    navigate(target);
-    return;
+  
+  const handleSearchChange = (event) => {
+    const term = event.target.value;
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset to first page when searching
+    if (term.length >= 3 || term.length === 0) {
+      fetchTransactions();
+    }
   }
 
-  // Not logged in — send to login (keeps PrivateRoute behavior consistent)
-  navigate('/login');
-};
-
+  // Back button handler
+  const handleBackToDashboard = () => {
+    if (user && user.role) {
+      const rolePathMap = {
+        Institution: '/dashboard/institution',
+        Department:  '/dashboard/department',
+        User:        '/dashboard/user',
+      };
+      const target = rolePathMap[user.role] ?? '/institutions';
+      navigate(target);
+      return;
+    }
+    navigate('/login');
+  };
 
   // Render Logic
   if (isLoading) {
@@ -429,6 +459,196 @@ const handleBackToDashboard = () => {
             </div>
           )}
         </div>
+        
+        {/* Transaction Table Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mt-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Transactions</h2>
+            <div className="mb-4">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaSearch className="text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search by department, vendor, or description..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className="w-full p-3 pl-10 text-black rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                    />
+                </div>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="min-w-full bg-white rounded-lg">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
+                            <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Recipient/Vendor</th>
+                            <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                            <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                            <th className="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {filteredTransactions.map((t) => (
+                            <tr key={t._id} className="hover:bg-gray-50">
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-gray-800">{new Date(t.date).toLocaleDateString()}</td>
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-gray-800">{t.department?.name}</td>
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-gray-800">{t.recipient || t.vendor || 'N/A'}</td>
+                                <td className="py-4 px-4 text-sm text-gray-800">{t.description}</td>
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">${t.amount.toLocaleString()}</td>
+                                <td className="py-4 px-4 whitespace-nowrap text-sm text-center">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${t.type === 'Allocation' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                                        {t.type}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            
+            {/* Pagination */}
+            <div className="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                        onClick={() => {
+                            if (currentPage > 1) {
+                                setCurrentPage(prev => prev - 1);
+                            }
+                        }}
+                        disabled={currentPage === 1}
+                        className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                            currentPage === 1 ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (currentPage < totalPages) {
+                                setCurrentPage(prev => prev + 1);
+                            }
+                        }}
+                        disabled={currentPage === totalPages}
+                        className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                            currentPage === totalPages ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        Next
+                    </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm text-gray-700">
+                            Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                            <span className="font-medium">{totalPages}</span>
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button
+                                onClick={() => {
+                                    if (currentPage > 1) {
+                                        setCurrentPage(prev => prev - 1);
+                                    }
+                                }}
+                                disabled={currentPage === 1}
+                                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                                    currentPage === 1 ? 'cursor-not-allowed' : 'hover:text-gray-500'
+                                }`}
+                            >
+                                <span className="sr-only">Previous</span>
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                            {(() => {
+                                const pageNumbers = [];
+                                if (totalPages <= 7) {
+                                    // If total pages is 7 or less, show all pages
+                                    for (let i = 1; i <= totalPages; i++) {
+                                        pageNumbers.push(i);
+                                    }
+                                } else {
+                                    // Always show first two pages
+                                    pageNumbers.push(1, 2);
+                                    
+                                    if (currentPage <= 4) {
+                                        // If current page is near the start
+                                        pageNumbers.push(3, 4, 5, '...', totalPages);
+                                    } else if (currentPage >= totalPages - 3) {
+                                        // If current page is near the end
+                                        pageNumbers.push(
+                                            '...',
+                                            totalPages - 4,
+                                            totalPages - 3,
+                                            totalPages - 2,
+                                            totalPages - 1,
+                                            totalPages
+                                        );
+                                    } else {
+                                        // If current page is in the middle
+                                        pageNumbers.push(
+                                            '...',
+                                            currentPage - 1,
+                                            currentPage,
+                                            currentPage + 1,
+                                            '...',
+                                            totalPages
+                                        );
+                                    }
+                                }
+
+                                return pageNumbers.map((pageNum, index) => {
+                                    if (pageNum === '...') {
+                                        return (
+                                            <span
+                                                key={`ellipsis-${index}`}
+                                                className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700"
+                                            >
+                                                ...
+                                            </span>
+                                        );
+                                    }
+                                    
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                                currentPage === pageNum
+                                                    ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                                    : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                });
+                            })()}
+                            <button
+                                onClick={() => {
+                                    if (currentPage < totalPages) {
+                                        setCurrentPage(prev => prev + 1);
+                                    }
+                                }}
+                                disabled={currentPage === totalPages}
+                                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                                    currentPage === totalPages ? 'cursor-not-allowed' : 'hover:text-gray-500'
+                                }`}
+                            >
+                                <span className="sr-only">Next</span>
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </div>
       
       {/* Floating Chatbot */}

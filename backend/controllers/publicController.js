@@ -2,6 +2,7 @@
 
 const Institution = require('../models/Institution');
 const Transaction = require('../models/Transaction');
+const DepartmentTransaction = require('../models/DepartmentTransaction');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
 const Report = require('../models/Report');
@@ -114,6 +115,74 @@ const getPublicInstitutionAnomalies = async (req, res) => {
     anomalies: anomaliesForFrontend,
   });
 };
+
+const getAllTransactionsForInstitution = async (req, res) => {
+    try {
+        const { institutionId } = req.params;
+        const { search, page = 1 } = req.query;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        // First verify the institution exists
+        const institution = await Institution.findById(institutionId);
+        if (!institution) {
+            throw new CustomError.NotFoundError(`No institution found with id: ${institutionId}`);
+        }
+
+        // Fetch both types of transactions in parallel for efficiency
+        const institutionTransactionsPromise = Transaction.find({ institution: institutionId })
+            .populate('department', 'name')
+            .sort('-date');
+        const departmentTransactionsPromise = DepartmentTransaction.find({ institution: institutionId })
+            .populate('department', 'name')
+            .sort('-date');
+
+        const [institutionTransactions, departmentTransactions] = await Promise.all([
+            institutionTransactionsPromise,
+            departmentTransactionsPromise
+        ]);
+
+        // Combine and add a 'type' to distinguish them on the frontend
+        let allTransactions = [
+            ...institutionTransactions.map(t => ({...t.toObject(), type: 'Allocation'})),
+            ...departmentTransactions.map(t => ({...t.toObject(), type: 'Spending'}))
+        ];
+
+        // If a search term is provided, filter the combined list
+        if (search) {
+            const searchTerm = search.toLowerCase();
+            allTransactions = allTransactions.filter(t =>
+                (t.department?.name && t.department.name.toLowerCase().includes(searchTerm)) ||
+                (t.vendor && t.vendor.toLowerCase().includes(searchTerm)) ||
+                (t.recipient && t.recipient.toLowerCase().includes(searchTerm)) ||
+                (t.description && t.description.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Sort all transactions by date in descending order
+        allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Calculate pagination
+        const totalTransactions = allTransactions.length;
+        const totalPages = Math.ceil(totalTransactions / limit);
+        
+        // Get paginated transactions
+        const paginatedTransactions = allTransactions.slice(skip, skip + limit);
+
+        res.status(StatusCodes.OK).json({ 
+            count: totalTransactions, 
+            transactions: paginatedTransactions,
+            currentPage: parseInt(page),
+            totalPages
+        });
+    } catch (error) {
+        console.error('Error in getAllTransactionsForInstitution:', error);
+        if (error instanceof CustomError.NotFoundError) {
+            throw error;
+        }
+        throw new CustomError.BadRequestError('Error retrieving transactions. Please try again.');
+    }
+};
 module.exports = {
   getInstitutionDetails,
   getPublicLinkedDepartments,
@@ -121,4 +190,5 @@ module.exports = {
   getAllInstitutions,
   searchTransactions,
   getPublicInstitutionAnomalies,
+  getAllTransactionsForInstitution
 };
