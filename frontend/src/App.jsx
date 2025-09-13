@@ -93,7 +93,7 @@ function App() {
           <Route
             path="/chat/:conversationId"
             element={
-              <PrivateRoute roles={['User']}>
+              <PrivateRoute roles={['User', 'Department']}>
                 <ChatRoom />
               </PrivateRoute>
             }

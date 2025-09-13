@@ -75,7 +75,15 @@ const ChatRoom = () => {
         }, 100);
       }
     };
+
+    // Start polling for messages every 5 seconds
+    const pollInterval = setInterval(fetchMessages, 5000);
+    
+    // Initialize chat room
     initializeChat();
+
+    // Cleanup function to clear interval when component unmounts
+    return () => clearInterval(pollInterval);
   }, [conversationId]);
 
   const handleSendMessage = async (e) => {

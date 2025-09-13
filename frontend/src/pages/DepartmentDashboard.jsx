@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { getErrorMessage } from '../services/errorHandler';
 import {
@@ -25,6 +26,7 @@ import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
 const DepartmentDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState(0);
   
   // State for Approvals Tab
@@ -243,14 +245,39 @@ const DepartmentDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">Department Dashboard</h1>
               <p className="text-gray-700 mt-1">{user?.name}</p>
             </div>
-            <button
-              onClick={handleRefreshData}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-              title="Refresh data"
-            >
-              <IoReloadCircle className="text-lg" />
-              <span>Refresh</span>
-            </button>
+            <div className="flex gap-2">
+              {user?.userId && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data } = await api.post('/chat', { departmentId: user.userId });
+                      console.log('Chat response:', data);
+                      if (data.conversation && data.conversation._id) {
+                        navigate('/chat/' + data.conversation._id);
+                      } else {
+                        console.error('No conversation ID in response:', data);
+                      }
+                    } catch (err) {
+                      console.error('Error starting chat:', err);
+                      setError(getErrorMessage(err, 'Failed to start chat session.'));
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white border border-blue-600 rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
+                  title="Open Chat"
+                >
+                  <IoBusinessOutline className="text-lg" />
+                  <span>Open Chat</span>
+                </button>
+              )}
+              <button
+                onClick={handleRefreshData}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                title="Refresh data"
+              >
+                <IoReloadCircle className="text-lg" />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
