@@ -41,7 +41,7 @@ const Roles = () => {
               <button
                 key={roleKey}
                 onClick={() => setActiveRole(roleKey)}
-                className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                className={`px-6 mx-2 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                   activeRole === roleKey
                     ? 'bg-[#0B95D6] text-white shadow-lg transform scale-105'
                     : 'text-gray-600 hover:text-[#0B95D6] hover:bg-gray-200'

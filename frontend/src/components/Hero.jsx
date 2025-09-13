@@ -3,7 +3,7 @@ import { Link as RouterLink } from 'react-router-dom';
 
 const Hero = () => {
   return (
-    <section id="home" className="relative bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex items-center overflow-hidden">
+    <section id="hero" className="relative bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex items-center overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#0B95D6] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>

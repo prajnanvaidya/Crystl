@@ -2,7 +2,6 @@ import Hero from '../components/Hero';
 import Roles from '../components/Roles';
 import Features from '../components/Features';
 import Contact from '../components/Contact';
-import Footer from '../components/Footer';
 
 function HomePage() {
   return (
@@ -11,7 +10,6 @@ function HomePage() {
       <Roles />
       <Features />
       <Contact />
-      <Footer />
     </div>
   );
 }
