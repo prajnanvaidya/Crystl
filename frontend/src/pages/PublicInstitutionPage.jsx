@@ -110,9 +110,10 @@ const { currency, toggleCurrency, formatAmount } = useCurrency();
     setIsAnalyticsLoading(true);
     setError('');
     try {
-      const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
-      const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
-      const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
+        const reportId = report._id; // Get the ID from the selected report
+      const flowchartPromise = api.get(`/public/flowchart/${institutionId}?reportId=${reportId}`);
+const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share?reportId=${reportId}`);
+const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}&reportId=${reportId}`);
 
       const [flowchartRes, deptShareRes, spendingTrendRes] = await Promise.all([
         flowchartPromise,
@@ -246,7 +247,7 @@ const { currency, toggleCurrency, formatAmount } = useCurrency();
     <span className="text-sky-700 font-semibold">Back to Dashboard</span>
   </button>
 </div>
-          <div className="flex-shrink-0 mt-1">
+          {/* <div className="flex-shrink-0 mt-1">
             <button
               type="button"
               onClick={handleBackToDashboard}
@@ -258,7 +259,7 @@ const { currency, toggleCurrency, formatAmount } = useCurrency();
               </svg>
               <span className="text-sky-700 font-semibold">Back to Dashboard</span>
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Alerts */}

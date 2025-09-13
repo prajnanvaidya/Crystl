@@ -152,6 +152,7 @@ const DepartmentDashboard = () => {
     setError('');
     try {
       const institutionId = user.linkedInstitution;
+      const reportId = report._id;
       const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
       const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
       const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
