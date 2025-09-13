@@ -1,7 +1,13 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleExploreInstitutions = () => {
+    navigate('/institutions');
+  };
+
   return (
     <section id="hero" className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background Image with Improved Gradient Overlay */}
@@ -32,7 +38,10 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-            <button className="relative bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 shadow-lg group overflow-hidden">
+            <button 
+              onClick={handleExploreInstitutions}
+              className="relative bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 shadow-lg group overflow-hidden"
+            >
               <span className="relative z-10">Explore Institutions</span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#0A7BB8] to-[#0B95D6] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>
