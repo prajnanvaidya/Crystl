@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import './index.css'
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 
 // A simple dark theme for a modern, professional look
