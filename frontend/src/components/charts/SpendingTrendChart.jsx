@@ -41,11 +41,16 @@ const SpendingTrendChart = ({ data, groupBy, handleFilterChange }) => {
   return (
     <Box sx={{ width: '100%', height: 350 }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <ToggleButtonGroup value={groupBy} exclusive onChange={handleFilterChange} size="small">
-                <ToggleButton value="monthly">Monthly</ToggleButton>
-                <ToggleButton value="quarterly">Quarterly</ToggleButton>
-                <ToggleButton value="annually">Annually</ToggleButton>
-            </ToggleButtonGroup>
+            <ToggleButtonGroup
+  value={groupBy}
+  exclusive
+  onChange={handleFilterChange}
+  size="small"
+>
+  <ToggleButton value="monthly" sx={{ color: 'black' }}>Monthly</ToggleButton>
+  <ToggleButton value="quarterly" sx={{ color: 'black' }}>Quarterly</ToggleButton>
+  <ToggleButton value="annually" sx={{ color: 'black' }}>Annually</ToggleButton>
+</ToggleButtonGroup>
         </Box>
       <ResponsiveContainer>
         <BarChart
