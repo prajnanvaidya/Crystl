@@ -113,7 +113,7 @@ const RegisterPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               // Dynamically apply red border on error
-              className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md text-gray-900 shadow-sm focus:outline-none focus:ring-1 sm:text-sm text-gray-900 ${
+              className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md text-gray-900 shadow-sm focus:outline-none focus:ring-1 sm:text-sm ${
                 emailError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-[#0B95D6] focus:border-[#0B95D6]'
               }`}
             />
