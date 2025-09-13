@@ -256,28 +256,6 @@ const DepartmentDashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* --- Anomaly Section --- */}
-        <div className="bg-white rounded-xl border-2 border-red-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 mb-8 max-w-lg">
-          <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
-            <IoWarningOutline className="mr-2 text-red-500" />
-            Spending Alerts
-          </h3>
-          <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
-            {anomalies.length > 0 ? (
-              anomalies.map((anomaly) => (
-                <div key={anomaly._id} className="bg-red-50 border border-red-200 p-3 rounded-lg">
-                  <p className="text-sm font-medium text-red-800">{anomaly.message}</p>
-                  <p className="text-xs text-red-600 mt-1">Detected on: {new Date(anomaly.createdAt).toLocaleDateString()}</p>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-6 text-gray-500">
-                <IoWarningOutline className="mx-auto text-green-400 mb-2" style={{ fontSize: '2.5rem' }} />
-                <p>No spending anomalies detected. All spending is within expected limits.</p>
-              </div>
-            )}
-          </div>
-        </div>
         {/* Success and Error Alerts */}
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center shadow-sm">
@@ -422,6 +400,29 @@ const DepartmentDashboard = () => {
                   </div>
                   
                   <div className="space-y-6">
+                    {/* Spending Alerts Section */}
+                    <div className="bg-white rounded-xl border-2 border-red-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                      <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
+                        <IoWarningOutline className="mr-2 text-red-500" />
+                        Spending Alerts
+                      </h3>
+                      <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
+                        {anomalies.length > 0 ? (
+                          anomalies.map((anomaly) => (
+                            <div key={anomaly._id} className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                              <p className="text-sm font-medium text-red-800">{anomaly.message}</p>
+                              <p className="text-xs text-red-600 mt-1">Detected on: {new Date(anomaly.createdAt).toLocaleDateString()}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-gray-500">
+                            <IoWarningOutline className="mx-auto text-green-400 mb-2" style={{ fontSize: '2.5rem' }} />
+                            <p>No spending anomalies detected. All spending is within expected limits.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="bg-white border border-gray-200 p-5 rounded-lg shadow-sm">
                       <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                         <IoBusinessOutline className="mr-2 text-[#0B95D6]" />
@@ -579,24 +580,49 @@ const DepartmentDashboard = () => {
       {/* Modal for Uploading Spending Report */}
       <div className={`fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className={`bg-white rounded-xl w-full max-w-md p-6 shadow-xl relative transition-transform duration-300 ${isModalOpen ? 'scale-100' : 'scale-95'}`}>
-          <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><IoCloseOutline className="w-6 h-6" /></button>
+          <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <IoCloseOutline className="w-6 h-6" />
+          </button>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Department Spending</h2>
           <form onSubmit={handleUploadSpendingReport}>
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-medium mb-2">Report Name</label>
-              <input type="text" placeholder="e.g., Q4 Vendor Expenses" value={newReportName} onChange={e => setNewReportName(e.target.value)} className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+              <input
+                type="text"
+                placeholder="e.g., Q4 Vendor Expenses"
+                value={newReportName}
+                onChange={e => setNewReportName(e.target.value)}
+                className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
             </div>
             <div className="mb-6">
               <label className="block text-gray-700 text-sm font-medium mb-2">Transaction File</label>
               <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                 <IoCloudUploadOutline className="w-8 h-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-500">{selectedFile ? selectedFile.name : 'Click to upload CSV or PDF file'}</span>
-                <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} accept=".csv,.pdf" />
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={e => setSelectedFile(e.target.files[0])}
+                  accept=".csv,.pdf"
+                />
               </label>
             </div>
             <div className="flex justify-end gap-3">
-              <button type="button" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" onClick={() => setIsModalOpen(false)}>Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors">Submit Report</button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors"
+              >
+                Submit Report
+              </button>
             </div>
           </form>
         </div>
