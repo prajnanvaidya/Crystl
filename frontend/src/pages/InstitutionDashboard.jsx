@@ -15,7 +15,10 @@ import {
   TrendingUp,
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
-  WarningAmber as WarningIcon, // <-- Icon for anomalies
+  WarningAmber as WarningIcon,
+  Search as SearchIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { CloudUploadIcon } from '@heroicons/react/solid';
 
@@ -44,6 +47,47 @@ const InstitutionDashboard = () => {
   const [newReportDate, setNewReportDate] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [fullscreenContent, setFullscreenContent] = useState({ open: false, title: '', ChartComponent: null });
+  
+  // Transaction table state
+  const [transactions, setTransactions] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
+
+  // Function to fetch transactions
+  const fetchTransactions = async () => {
+    if (!user?.userId) return;
+    
+    setIsTransactionsLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString()
+      });
+      
+      // Only add search parameter if there's a search term
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+
+      const { data } = await api.get(
+        `/public/institution/${user.userId}/all-transactions?${params.toString()}`
+      );
+      setTransactions(data.transactions);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.currentPage);
+    } catch (err) {
+      setError('Failed to load transactions.');
+    } finally {
+      setIsTransactionsLoading(false);
+    }
+  };
+
+  // Effect to fetch transactions when page or search changes
+  useEffect(() => {
+    fetchTransactions();
+  }, [currentPage, user?.userId]);
 
   // --- DATA FETCHING (Now includes anomalies) ---
   useEffect(() => {
@@ -170,6 +214,15 @@ const InstitutionDashboard = () => {
     setFullscreenContent({ open: false, title: '', ChartComponent: null });
   };
 
+  const handleSearchChange = (event) => {
+    const term = event.target.value;
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset to first page when searching
+    if (term === '' || term.length >= 3) {
+      fetchTransactions();
+    }
+  };
+
 
   // --- RENDER LOGIC ---
   if (isLoading) {
@@ -287,6 +340,178 @@ const InstitutionDashboard = () => {
                     <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-4 relative h-[400px] flex flex-col"><div className="flex justify-between items-center mb-2"><h4 className="text-lg font-semibold text-gray-800 flex items-center"><TrendingUp className="mr-2 text-blue-600" />Spending Trend</h4><button className="text-gray-400 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors" onClick={() => handleOpenFullscreen('Spending Trend', <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />)}><FullscreenIcon /></button></div><div className="flex-grow w-full h-full"><SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} /></div></div>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Transaction Table Section */}
+            <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">All Transactions</h2>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="pl-10 pr-4 py-2 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                  />
+                </div>
+              </div>
+
+              {isTransactionsLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin h-12 w-12 text-blue-600">
+                    <svg className="animate-spin h-12 w-12 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {transactions.map((transaction) => (
+                          <tr key={transaction._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {transaction.department?.name || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {transaction.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                              ${transaction.amount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                transaction.type === 'Allocation' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                                {transaction.type}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    <div className="flex flex-1 justify-between sm:hidden">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                          currentPage === 1 ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                          currentPage === totalPages ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700">
+                          Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                          <span className="font-medium">{totalPages}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                          <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                              currentPage === 1 ? 'cursor-not-allowed' : 'hover:text-gray-500'
+                            }`}
+                          >
+                            <span className="sr-only">Previous</span>
+                            <ChevronLeftIcon className="h-5 w-5" />
+                          </button>
+                          
+                          {(() => {
+                            const pageNumbers = [];
+                            if (totalPages <= 7) {
+                              for (let i = 1; i <= totalPages; i++) {
+                                pageNumbers.push(i);
+                              }
+                            } else {
+                              if (currentPage <= 4) {
+                                pageNumbers.push(1, 2, 3, 4, 5, '...', totalPages);
+                              } else if (currentPage >= totalPages - 3) {
+                                pageNumbers.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                              } else {
+                                pageNumbers.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                              }
+                            }
+
+                            return pageNumbers.map((pageNum, index) => {
+                              if (pageNum === '...') {
+                                return (
+                                  <span
+                                    key={`ellipsis-${index}`}
+                                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700"
+                                  >
+                                    ...
+                                  </span>
+                                );
+                              }
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                    currentPage === pageNum
+                                      ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                      : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            });
+                          })()}
+
+                          <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                              currentPage === totalPages ? 'cursor-not-allowed' : 'hover:text-gray-500'
+                            }`}
+                          >
+                            <span className="sr-only">Next</span>
+                            <ChevronRightIcon className="h-5 w-5" />
+                          </button>
+                        </nav>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </section>
