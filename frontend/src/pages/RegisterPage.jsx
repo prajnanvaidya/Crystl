@@ -95,7 +95,7 @@ const RegisterPage = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 bg-white border text-gray-900  border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
             />
           </div>
           <div>
@@ -108,7 +108,7 @@ const RegisterPage = () => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 bg-white border text-gray-900 border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
             />
           </div>
           
