@@ -2,6 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { authenticateUser } = require('../middleware/authentication');
 
 const {
   registerInstitution,
@@ -11,6 +12,7 @@ const {
   registerUser,
   loginUser,
   logout,
+  showCurrentUser, 
 } = require('../controllers/authController');
 
 // --- INSTITUTION ROUTES ---
@@ -27,5 +29,6 @@ router.post('/user/login', loginUser);
 
 // --- LOGOUT ROUTE (works for all user types) ---
 router.get('/logout', logout);
+router.get('/showMe', authenticateUser, showCurrentUser);
 
 module.exports = router;
