@@ -11,7 +11,7 @@ const options = {
     node: {
       colors: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00c49f'],
       label: { 
-        color: '#ffffff',
+        color: '#000000',
         fontName: 'Roboto', 
         fontSize: 14 
       },
