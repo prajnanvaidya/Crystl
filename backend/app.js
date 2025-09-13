@@ -37,7 +37,7 @@ const errorHandlerMiddleware = require('./middleware/error-handler');
 const allowedOrigins = [
     'http://localhost:3000', // The default for create-react-app
     'http://localhost:5173' ,
-    'https://crystl.vercel.app/', // The default for Vite
+    'https://crystl.vercel.app', // The default for Vite
     // Add your deployed frontend URL here later, e.g., 'https://your-app.vercel.app'
 ];
 
