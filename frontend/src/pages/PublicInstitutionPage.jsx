@@ -21,6 +21,8 @@ import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 import FloatingChatbotPublic from '../components/chatbot/FloatingChatbotPublic';
 
 const PublicInstitutionPage = () => {
+  // Anomaly section state
+  const [anomalies, setAnomalies] = useState([]);
   const { institutionId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -51,11 +53,13 @@ const PublicInstitutionPage = () => {
         const detailsPromise = api.get(`/public/institution/${institutionId}/details`);
         const departmentsPromise = api.get(`/public/institution/${institutionId}/departments`);
         const reportsPromise = api.get(`/public/institution/${institutionId}/reports`);
+        const anomaliesPromise = api.get(`/public/institution/${institutionId}/anomalies`);
 
-        const [detailsRes, departmentsRes, reportsRes] = await Promise.all([
+        const [detailsRes, departmentsRes, reportsRes, anomaliesRes] = await Promise.all([
           detailsPromise,
           departmentsPromise,
           reportsPromise,
+          anomaliesPromise,
         ]);
 
         setPageData(prev => ({
@@ -64,6 +68,7 @@ const PublicInstitutionPage = () => {
           departments: departmentsRes.data.departments,
           reports: reportsRes.data.reports,
         }));
+        setAnomalies(anomaliesRes.data.anomalies || []);
       } catch (err) {
         setError('Failed to load institution details. This institution may not exist or have public records.');
         console.error("Initial data fetch error:", err);
@@ -160,6 +165,28 @@ const PublicInstitutionPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* --- Anomaly Section --- */}
+      <div className="bg-white rounded-xl border-2 border-red-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 mb-8 max-w-lg">
+        <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
+          <FaChartBar className="mr-2 text-red-500" />
+          Spending Alerts
+        </h3>
+        <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
+          {anomalies.length > 0 ? (
+            anomalies.map((anomaly) => (
+              <div key={anomaly._id} className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                <p className="text-sm font-medium text-red-800">{anomaly.message}</p>
+                <p className="text-xs text-red-600 mt-1">Detected on: {new Date(anomaly.createdAt).toLocaleDateString()}</p>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <FaChartBar className="mx-auto text-green-400 mb-2" style={{ fontSize: '2.5rem' }} />
+              <p>No spending anomalies detected. All spending is within expected limits.</p>
+            </div>
+          )}
+        </div>
+      </div>
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">

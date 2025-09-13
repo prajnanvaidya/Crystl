@@ -92,10 +92,33 @@ const getPublicReports = async (req, res) => {
   
   res.status(StatusCodes.OK).json({ reports });
 };
+// Public endpoint to get institution anomalies
+const Anomaly = require('../models/Anomaly');
+const getPublicInstitutionAnomalies = async (req, res) => {
+  const { institutionId } = req.params;
+  const anomaliesFromDB = await Anomaly.find({ institution: institutionId })
+    .populate({ path: 'department', select: 'name departmentId' })
+    .sort('-createdAt');
+  const anomaliesForFrontend = anomaliesFromDB.map(anomaly => {
+    const anomalyObject = anomaly.toObject();
+    const departmentName = anomalyObject.department?.name || 'An unknown department';
+    const formattedOverage = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(anomalyObject.overageAmount);
+    anomalyObject.message = `The "${departmentName}" department has overspent its allocated budget by ${formattedOverage}.`;
+    return anomalyObject;
+  });
+  res.status(200).json({
+    count: anomaliesForFrontend.length,
+    anomalies: anomaliesForFrontend,
+  });
+};
 module.exports = {
-      getInstitutionDetails,
+  getInstitutionDetails,
   getPublicLinkedDepartments,
   getPublicReports,
   getAllInstitutions,
   searchTransactions,
+  getPublicInstitutionAnomalies,
 };

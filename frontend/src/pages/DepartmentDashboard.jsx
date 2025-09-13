@@ -38,6 +38,8 @@ const DepartmentDashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
+  // Anomaly section state
+  const [anomalies, setAnomalies] = useState([]);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [trendGroupBy, setTrendGroupBy] = useState('monthly');
   
@@ -57,22 +59,20 @@ const DepartmentDashboard = () => {
       setError('');
       try {
         const transactionsPromise = api.get('/department/pending-transactions');
-        
         const promisesToRun = [transactionsPromise];
-        
         if (user?.linkedInstitution) {
+          promisesToRun.push(api.get(`/public/institution/${user.linkedInstitution}/anomalies`));
           promisesToRun.push(api.get(`/public/institution/${user.linkedInstitution}/departments`));
         }
-
         const responses = await Promise.all(promisesToRun);
-
         setPendingTransactions(responses[0].data.transactions);
-        
-        if (responses[1]) {
-          const peerDepartments = responses[1].data.departments.filter(dept => dept.name !== user.name);
+        if (user?.linkedInstitution && responses[1]) {
+          setAnomalies(responses[1].data.anomalies || []);
+        }
+        if (user?.linkedInstitution && responses[2]) {
+          const peerDepartments = responses[2].data.departments.filter(dept => dept.name !== user.name);
           setLinkedDepartments(peerDepartments);
         }
-
       } catch (err) {
         setError(getErrorMessage(err, 'Failed to fetch initial dashboard data.'));
       } finally {
@@ -256,6 +256,28 @@ const DepartmentDashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* --- Anomaly Section --- */}
+        <div className="bg-white rounded-xl border-2 border-red-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 mb-8 max-w-lg">
+          <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
+            <IoWarningOutline className="mr-2 text-red-500" />
+            Spending Alerts
+          </h3>
+          <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
+            {anomalies.length > 0 ? (
+              anomalies.map((anomaly) => (
+                <div key={anomaly._id} className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-red-800">{anomaly.message}</p>
+                  <p className="text-xs text-red-600 mt-1">Detected on: {new Date(anomaly.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <IoWarningOutline className="mx-auto text-green-400 mb-2" style={{ fontSize: '2.5rem' }} />
+                <p>No spending anomalies detected. All spending is within expected limits.</p>
+              </div>
+            )}
+          </div>
+        </div>
         {/* Success and Error Alerts */}
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center shadow-sm">

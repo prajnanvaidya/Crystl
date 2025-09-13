@@ -7,7 +7,10 @@ const router = express.Router();
 const { getFlowchartData } = require('../controllers/flowchartController');
 const { getAllInstitutions, searchTransactions,getInstitutionDetails,
   getPublicLinkedDepartments,
-  getPublicReports } = require('../controllers/publicController');
+  getPublicReports,
+  getPublicInstitutionAnomalies } = require('../controllers/publicController');
+// Public endpoint for institution anomalies
+router.get('/institution/:institutionId/anomalies', getPublicInstitutionAnomalies);
 const { getSpendingTrend, getDepartmentShare } = require('../controllers/analyticsController');
 // --- DEFINE THE PUBLIC ROUTES ---
 // These endpoints are public and do not require any authentication.
