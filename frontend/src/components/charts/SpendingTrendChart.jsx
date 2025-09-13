@@ -39,7 +39,7 @@ const SpendingTrendChart = ({ data, groupBy, handleFilterChange }) => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: 350 }}>
+    <Box sx={{ width: '100%', height: 250 }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
             <ToggleButtonGroup
   value={groupBy}
