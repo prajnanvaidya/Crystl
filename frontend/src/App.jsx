@@ -1,29 +1,25 @@
-// src/App.jsx - UPDATED for Homepage Flow
+// src/App.jsx - FINAL CORRECTED VERSION
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
 
-// --- Layout & Page Imports ---
+// --- Component and Page Imports ---
 import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute'; 
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import InstitutionDashboard from './pages/InstitutionDashboard';
 import RegisterPage from './pages/RegisterPage';
+import InstitutionDashboard from './pages/InstitutionDashboard';
 import DepartmentDashboard from './pages/DepartmentDashboard';
 import InstitutionExplorerPage from './pages/InstitutionExplorerPage';
 import PublicInstitutionPage from './pages/PublicInstitutionPage';
-// import Dashboard from './pages/Dashboard';
-
-// A simple component to protect routes
-const PrivateRoute = ({ children }) => {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
-};
+import UserDashboard from './pages/UserDashboard';
+import ChatPage from './pages/ChatPage';
 
 function App() {
-  const { isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // Show a global spinner while the app checks for a logged-in user
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -35,29 +31,38 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* All routes are now nested under the Layout, so they all get the Navbar */}
         <Route element={<Layout />}>
-          {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
- <Route path="/institutions" element={<InstitutionExplorerPage />} />
-          <Route path="/institution/:institutionId" element={<PublicInstitutionPage />} />
-
-          {/* Private/Protected Route */}
+          {/* --- Public Routes --- */}
           <Route
-            path="/dashboard"
+            path="/"
             element={
-              <PrivateRoute>
-                <div>Dashboard Placeholder</div>
-              </PrivateRoute>
+              user ? (
+                <Navigate
+                  to={
+                    user.role === 'Institution' ? '/dashboard/institution' :
+                    user.role === 'Department' ? '/dashboard/department' :
+                    user.role === 'User' ? '/dashboard/user' :
+                    '/institutions' // Safe fallback
+                  }
+                  replace
+                />
+              ) : (
+                <HomePage />
+              )
             }
           />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/institutions" element={<InstitutionExplorerPage />} />
+          <Route path="/institution/:institutionId" element={<PublicInstitutionPage />} />
+
+          {/* --- Private Routes with PROPER Role Checking --- */}
+
           <Route
             path="/dashboard/department"
             element={
               <PrivateRoute roles={['Department']}>
-                <DepartmentDashboard /> {/* <--- REPLACE THE DIV WITH THE COMPONENT */}
+                <DepartmentDashboard />
               </PrivateRoute>
             }
           />
@@ -66,6 +71,22 @@ function App() {
             element={
               <PrivateRoute roles={['Institution']}>
                 <InstitutionDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/user"
+            element={
+              <PrivateRoute roles={['User']}>
+                <UserDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/user/chat/:institutionId"
+            element={
+              <PrivateRoute roles={['User']}>
+                <ChatPage />
               </PrivateRoute>
             }
           />
