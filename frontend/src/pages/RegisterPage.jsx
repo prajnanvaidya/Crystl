@@ -1,40 +1,21 @@
-// src/pages/RegisterPage.jsx
+// src/pages/RegisterPage.jsx (Restyled with Tailwind CSS)
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Paper,
-  Alert,
-  CircularProgress,
-  ToggleButtonGroup,
-  ToggleButton,
-} from '@mui/material';
+import Footer from '../components/Footer';
+
 
 const RegisterPage = () => {
-  // --- STATE MANAGEMENT ---
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user'); // Default role
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- HOOKS ---
   const { register } = useAuth();
   const navigate = useNavigate();
-
-  // --- HANDLERS ---
-  const handleRoleChange = (event, newRole) => {
-    if (newRole !== null) {
-      setRole(newRole);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,15 +23,13 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     if (password.length < 6) {
-        setError('Password must be at least 6 characters long.');
-        setIsLoading(false);
-        return;
+      setError('Password must be at least 6 characters long.');
+      setIsLoading(false);
+      return;
     }
 
     try {
-      // Call the register function from our AuthContext
       await register(role, { name, email, password });
-      // On success, the user state is set, and we navigate to the dashboard
       navigate('/dashboard');
     } catch (err) {
       const errorMessage = err.response?.data?.msg || 'Registration failed. Please try again.';
@@ -60,101 +39,104 @@ const RegisterPage = () => {
     }
   };
 
+  const getRoleButtonStyle = (buttonRole) => {
+    return role === buttonRole
+      ? 'bg-[#0B95D6] text-white'
+      : 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+  };
+
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper
-        elevation={6}
-        sx={{
-          marginTop: 8,
-          padding: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Sign Up
-        </Typography>
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#0B95D6]/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#F4B400]/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      
+      <div className="relative w-full max-w-md bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+          Create an Account
+        </h1>
+        <p className="text-center text-gray-600 mb-6">Join Crystl and start tracking funds today.</p>
 
-        {/* --- ROLE SELECTOR --- */}
-        <Typography sx={{ mt: 3, mb: 1 }}>I am a...</Typography>
-        <ToggleButtonGroup
-          color="primary"
-          value={role}
-          exclusive
-          onChange={handleRoleChange}
-          aria-label="User role"
-        >
-          <ToggleButton value="user">Public User</ToggleButton>
-          <ToggleButton value="department">Department</ToggleButton>
-          <ToggleButton value="institution">Institution</ToggleButton>
-        </ToggleButtonGroup>
+        {/* --- Custom Role Selector --- */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button onClick={() => setRole('user')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('user')}`}>
+            User
+          </button>
+          <button onClick={() => setRole('department')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('department')}`}>
+            Department
+          </button>
+          <button onClick={() => setRole('institution')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('institution')}`}>
+            Institution
+          </button>
+        </div>
 
-        {/* --- REGISTRATION FORM --- */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="name"
-            label="Name / Organization Name"
-            name="name"
-            autoComplete="name"
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          {/* --- ERROR DISPLAY --- */}
+        {/* --- Registration Form --- */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name / Organization Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+            />
+          </div>
+          
           {error && (
-            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md text-center">
               {error}
-            </Alert>
+            </div>
           )}
+          
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#0B95D6] hover:bg-[#0A7BB8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B95D6] disabled:bg-gray-400 transition-colors duration-300"
+            >
+              {isLoading ? 'Creating Account...' : 'Sign Up'}
+            </button>
+          </div>
+        </form>
 
-          {/* --- SUBMIT BUTTON --- */}
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={isLoading}
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
-          </Button>
-
-          <Typography variant="body2" align="center">
-            Already have an account?{' '}
-            <RouterLink to="/login" style={{ color: 'inherit' }}>
-              Sign In
-            </RouterLink>
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <RouterLink to="/login" className="font-medium text-[#0B95D6] hover:text-[#0A7BB8]">
+            Sign In
+          </RouterLink>
+        </p>
+      </div>
+    </div>
   );
 };
 

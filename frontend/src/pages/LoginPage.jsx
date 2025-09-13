@@ -1,145 +1,122 @@
-// src/pages/LoginPage.jsx
+// src/pages/LoginPage.jsx (Restyled with Tailwind CSS)
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Paper,
-  Alert,
-  CircularProgress,
-  ToggleButtonGroup,
-  ToggleButton,
-} from '@mui/material';
 
 const LoginPage = () => {
-  // --- STATE MANAGEMENT ---
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user'); // Default role is 'user'
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- HOOKS ---
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // --- HANDLERS ---
-  const handleRoleChange = (event, newRole) => {
-    // Prevents unselecting all options. At least one must be selected.
-    if (newRole !== null) {
-      setRole(newRole);
-    }
-  };
-
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent page refresh
-    setError(''); // Clear previous errors
+    e.preventDefault();
+    setError('');
     setIsLoading(true);
 
     try {
-      // Call the login function from our AuthContext
       await login(role, { email, password });
-      // On success, the user state in AuthContext will update,
-      // and the routing in App.jsx will automatically redirect to the dashboard.
       navigate('/dashboard');
     } catch (err) {
-      // If the API call throws an error, we catch it here
       const errorMessage = err.response?.data?.msg || 'Login failed. Please try again.';
       setError(errorMessage);
     } finally {
-      setIsLoading(false); // Stop the loading indicator
+      setIsLoading(false);
     }
   };
 
+  // Helper for dynamic button styling
+  const getRoleButtonStyle = (buttonRole) => {
+    return role === buttonRole
+      ? 'bg-[#0B95D6] text-white'
+      : 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+  };
+
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper
-        elevation={6}
-        sx={{
-          marginTop: 8,
-          padding: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Sign In
-        </Typography>
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#0B95D6]/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#F4B400]/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-        {/* --- ROLE SELECTOR --- */}
-        <ToggleButtonGroup
-          color="primary"
-          value={role}
-          exclusive
-          onChange={handleRoleChange}
-          aria-label="User role"
-          sx={{ mt: 3, mb: 2 }}
-        >
-          <ToggleButton value="user">Public User</ToggleButton>
-          <ToggleButton value="department">Department</ToggleButton>
-          <ToggleButton value="institution">Institution</ToggleButton>
-        </ToggleButtonGroup>
+      <div className="relative w-full max-w-md bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+          Welcome Back
+        </h1>
+        <p className="text-center text-gray-600 mb-6">Select your role and sign in.</p>
 
-        {/* --- LOGIN FORM --- */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        {/* --- Custom Role Selector --- */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button onClick={() => setRole('user')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('user')}`}>
+            User
+          </button>
+          <button onClick={() => setRole('department')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('department')}`}>
+            Department
+          </button>
+          <button onClick={() => setRole('institution')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${getRoleButtonStyle('institution')}`}>
+            Institution
+          </button>
+        </div>
 
-          {/* --- ERROR DISPLAY --- */}
+        {/* --- Login Form --- */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#0B95D6] focus:border-[#0B95D6] sm:text-sm"
+            />
+          </div>
+          
           {error && (
-            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md text-center">
               {error}
-            </Alert>
+            </div>
           )}
 
-          {/* --- SUBMIT BUTTON --- */}
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={isLoading}
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
-          </Button>
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#0B95D6] hover:bg-[#0A7BB8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B95D6] disabled:bg-gray-400 transition-colors duration-300"
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </button>
+          </div>
+        </form>
 
-          <Typography variant="body2" align="center">
-            Don't have an account?{' '}
-            <RouterLink to="/register" style={{ color: 'inherit' }}>
-              Sign Up
-            </RouterLink>
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <RouterLink to="/register" className="font-medium text-[#0B95D6] hover:text-[#0A7BB8]">
+            Sign Up
+          </RouterLink>
+        </p>
+      </div>
+    </div>
   );
 };
 

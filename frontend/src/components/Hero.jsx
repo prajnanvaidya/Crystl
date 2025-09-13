@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 const Hero = () => {
   return (
@@ -26,9 +27,9 @@ const Hero = () => {
             <button className="bg-[#0B95D6] text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-[#0A7BB8] transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
               Explore Institutions
             </button>
-            <button className="bg-white text-[#0B95D6] px-8 py-4 rounded-xl text-lg font-semibold border-2 border-[#0B95D6] hover:bg-[#0B95D6] hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+            < RouterLink to="/login" className="bg-white text-[#0B95D6] px-8 py-4 rounded-xl text-lg font-semibold border-2 border-[#0B95D6] hover:bg-[#0B95D6] hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
               Sign in
-            </button>
+            </RouterLink >
           </div>
         </div>
       </div>
