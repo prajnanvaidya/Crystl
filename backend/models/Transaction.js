@@ -7,8 +7,8 @@ const TransactionSchema = new mongoose.Schema({
   },
   vendor: {
     type: String,
-    required: [true, 'Please provide vendor name'],
     trim: true,
+    default: null,
   },
   description: {
     type: String,
