@@ -2,44 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import {
-  Container,
-  Typography,
-  Grid,
-  Paper,
-  TextField,
-  Button,
-  Box,
-  Alert,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemButton,
-  Divider,
-  Modal,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
+  Container, Typography, Grid, Paper, TextField, Button, Box, Alert,
+  CircularProgress, List, ListItem, ListItemText, ListItemButton, Divider,
+  Modal, Select, MenuItem, InputLabel, FormControl, Dialog, AppBar,
+  Toolbar, IconButton, Tooltip
 } from '@mui/material';
-import { BarChart as BarChartIcon, PieChart as PieChartIcon, TrendingUp } from '@mui/icons-material';
+import {
+  BarChart as BarChartIcon, PieChart as PieChartIcon, TrendingUp,
+  Fullscreen as FullscreenIcon, Close as CloseIcon
+} from '@mui/icons-material';
 
-// --- Final Step: Import the real, functional chart components ---
+// --- Import Chart Components ---
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
 import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
 // --- STYLES FOR THE MODAL ---
 const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
-  boxShadow: 24,
-  p: 4,
+  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+  width: 400, bgcolor: '#1E1E1E', color: 'white', border: '1px solid #444',
+  borderRadius: 2, boxShadow: 24, p: 4,
 };
 
 // ==================================================================================
@@ -63,9 +45,9 @@ const InstitutionDashboard = () => {
   const [newReportType, setNewReportType] = useState('monthly');
   const [newReportDate, setNewReportDate] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fullscreenContent, setFullscreenContent] = useState({ open: false, title: '', ChartComponent: null });
 
   // --- DATA FETCHING ---
-  // Fetch initial data (reports and departments) when the component mounts.
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -77,26 +59,22 @@ const InstitutionDashboard = () => {
         setLinkedDepartments(departmentsRes.data.departments);
         setReports(reportsRes.data.reports);
       } catch (err) {
-        const errorMessage = err.response?.data?.msg || 'Failed to load initial dashboard data.';
-        setError(errorMessage);
-        setLinkedDepartments([]);
-        setReports([]);
+        setError(err.response?.data?.msg || 'Failed to load initial dashboard data.');
       } finally {
         setIsLoading(false);
       }
     };
     fetchDashboardData();
-  }, []); // Empty array ensures this runs only once.
+  }, []);
 
   // --- HANDLERS ---
   const handleLinkDepartment = async (e) => {
     e.preventDefault();
-    // Use a specific loading state for this action if needed, or the general one.
-    // For simplicity, we'll reuse the general one but a dedicated one is better for complex UIs.
+    setError('');
+    setSuccess('');
     try {
       const { data } = await api.post('/institution/link-department', { departmentId: departmentIdToLink });
       setSuccess(data.msg);
-      // Refetch departments to show the newly linked one.
       const response = await api.get('/institution/linked-departments');
       setLinkedDepartments(response.data.departments);
       setDepartmentIdToLink('');
@@ -111,7 +89,8 @@ const InstitutionDashboard = () => {
       setError('Please fill in all report details and select a file.');
       return;
     }
-    // A dedicated loading state for the modal button could be used here.
+    setError('');
+    setSuccess('');
     const formData = new FormData();
     formData.append('name', newReportName);
     formData.append('type', newReportType);
@@ -120,37 +99,34 @@ const InstitutionDashboard = () => {
     try {
       const { data } = await api.post('/institution/upload-transactions', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setSuccess(data.msg);
-      // Refetch reports to show the new one.
       const response = await api.get('/institution/reports');
       setReports(response.data.reports);
-      // Close modal and reset form.
       setIsModalOpen(false);
-      setNewReportName(''); setNewReportDate(''); setSelectedFile(null);
+      setNewReportName('');
+      setNewReportDate('');
+      setSelectedFile(null);
     } catch (err) {
       setError(err.response?.data?.msg || 'File upload failed.');
     }
   };
-  
+
   const handleSelectReport = async (report) => {
     setSelectedReport(report);
     setIsAnalyticsLoading(true);
     setError('');
     try {
-      // Fetch all analytics data for the institution based on the current state.
       const institutionId = user.userId;
       const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
       const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
       const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
-      
       const [flowchartRes, deptShareRes, spendingTrendRes] = await Promise.all([flowchartPromise, deptSharePromise, spendingTrendPromise]);
-      
       setAnalyticsData({
         flowchart: flowchartRes.data,
         departmentShare: deptShareRes.data.departmentShares,
         spendingTrend: spendingTrendRes.data.spendingTrend,
       });
     } catch (err) {
-      setError(err.response?.data?.msg || "Could not load analytics for this report.");
+      setError(err.response?.data?.msg || "Could not load analytics.");
     } finally {
       setIsAnalyticsLoading(false);
     }
@@ -159,8 +135,7 @@ const InstitutionDashboard = () => {
   const handleTrendFilterChange = async (event, newGroupBy) => {
     if (newGroupBy !== null) {
       setTrendGroupBy(newGroupBy);
-      // Refetch just the trend data to update the chart.
-      setIsAnalyticsLoading(true); // Can use a more specific loading state if desired.
+      setIsAnalyticsLoading(true);
       try {
         const { data } = await api.get(`/public/analytics/${user.userId}/spending-trend?groupBy=${newGroupBy}`);
         setAnalyticsData(prevData => ({ ...prevData, spendingTrend: data.spendingTrend }));
@@ -172,72 +147,207 @@ const InstitutionDashboard = () => {
     }
   };
 
+  const handleOpenFullscreen = (title, ChartComponent) => {
+    setFullscreenContent({ open: true, title, ChartComponent });
+  };
+
+  const handleCloseFullscreen = () => {
+    setFullscreenContent({ open: false, title: '', ChartComponent: null });
+  };
+
   // --- RENDER LOGIC ---
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, bgcolor: '#121212', color: 'white', borderRadius: 2, p: 4 }}>
-      <Typography variant="h4" gutterBottom>Welcome, {user?.name}</Typography>
+    <Container maxWidth={false} sx={{ mt: 2, mb: 2, px: 2, width: '100%' }}>
+      {/* The "Welcome" message was removed from the image, but can be added back here if needed */}
+      {/* <Typography variant="h4" gutterBottom>Welcome, {user?.name}</Typography> */}
       
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Grid container spacing={3}>
-        {/* --- LEFT COLUMN: Lists and Actions --- */}
+        {/* LEFT COLUMN */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2, mb: 3, bgcolor: '#1E1E1E' }}>
+          {/* Management & Link Department */}
+          <Paper sx={{ p: 2, bgcolor: '#1E1E1E', mb: 3 }}>
             <Typography variant="h6" gutterBottom>Management</Typography>
-            <Button variant="contained" fullWidth onClick={() => setIsModalOpen(true)} sx={{ mb: 2 }}>Create New Report</Button>
-            <Divider />
-            <Box component="form" onSubmit={handleLinkDepartment} sx={{ mt: 2 }}>
+            <Button variant="contained" fullWidth onClick={() => setIsModalOpen(true)} sx={{ mb: 2 }}>
+              Create New Report
+            </Button>
+            <Divider sx={{ my: 2 }} />
+            <Box component="form" onSubmit={handleLinkDepartment}>
               <Typography variant="subtitle1" gutterBottom>Link a Department</Typography>
-              <TextField label="Department ID" value={departmentIdToLink} onChange={e => setDepartmentIdToLink(e.target.value)} fullWidth margin="dense" required />
-              <Button type="submit" variant="outlined" fullWidth sx={{ mt: 1 }}>Link Department</Button>
+              <TextField 
+                label="Department ID" 
+                value={departmentIdToLink} 
+                onChange={e => setDepartmentIdToLink(e.target.value)} 
+                fullWidth 
+                margin="dense" 
+                required 
+                size="small"
+              />
+              <Button type="submit" variant="outlined" fullWidth sx={{ mt: 1 }}>
+                Link Department
+              </Button>
             </Box>
           </Paper>
-
-          <Paper sx={{ p: 2, mb: 3, bgcolor: '#1E1E1E' }}>
-            <Typography variant="h6">Submitted Reports</Typography>
-            <List>{reports.length > 0 ? reports.map(report => (<ListItem key={report._id} disablePadding><ListItemButton selected={selectedReport?._id === report._id} onClick={() => handleSelectReport(report)}><ListItemText primary={report.name} secondary={`Date: ${new Date(report.reportDate).toLocaleDateString()}`} /></ListItemButton></ListItem>)) : (<ListItem><ListItemText primary="No reports submitted yet." /></ListItem>)}</List>
+          {/* Submitted Reports */}
+          <Paper sx={{ p: 2, bgcolor: '#1E1E1E', mb: 3 }}>
+            <Typography variant="h6" gutterBottom>Submitted Reports</Typography>
+            <List dense sx={{ maxHeight: 180, overflow: 'auto' }}>
+              {reports.length > 0 ? 
+                reports.map(report => (
+                  <ListItem key={report._id} disablePadding>
+                    <ListItemButton 
+                      selected={selectedReport?._id === report._id} 
+                      onClick={() => handleSelectReport(report)}
+                      sx={{ borderRadius: 1 }}
+                    >
+                      <ListItemText 
+                        primary={report.name} 
+                        secondary={`Date: ${new Date(report.reportDate).toLocaleDateString()}`} 
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )) : 
+                <ListItem>
+                  <ListItemText primary="No reports submitted yet." />
+                </ListItem>
+              }
+            </List>
           </Paper>
-            
+          {/* Linked Departments */}
           <Paper sx={{ p: 2, bgcolor: '#1E1E1E' }}>
-            <Typography variant="h6">Linked Departments</Typography>
-            <List>{linkedDepartments.length > 0 ? linkedDepartments.map(dept => (<ListItem key={dept._id}><ListItemText primary={dept.name} /></ListItem>)) : (<ListItem><ListItemText primary="No departments linked yet." /></ListItem>)}</List>
+            <Typography variant="h6" gutterBottom>Linked Departments</Typography>
+            <List dense sx={{ maxHeight: 120, overflow: 'auto' }}>
+              {linkedDepartments.length > 0 ? 
+                linkedDepartments.map(dept => (
+                  <ListItem key={dept._id}>
+                    <ListItemText primary={dept.name} />
+                  </ListItem>
+                )) : 
+                <ListItem>
+                  <ListItemText primary="No departments linked yet." />
+                </ListItem>
+              }
+            </List>
           </Paper>
         </Grid>
-        
-        {/* --- RIGHT COLUMN: Analytics Display --- */}
+
+        {/* RIGHT COLUMN */}
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, minHeight: '80vh', bgcolor: '#1E1E1E' }}>
-            <Typography variant="h5" gutterBottom>{selectedReport ? `Analytics for "${selectedReport.name}"` : 'Report Analytics'}</Typography>
+          <Paper sx={{ p: 3, bgcolor: '#1E1E1E', minHeight: 600 }}>
+            <Typography variant="h5" gutterBottom>
+              {selectedReport ? `Analytics for "${selectedReport.name}"` : 'Report Analytics'}
+            </Typography>
             {!selectedReport ? (
-              <Typography color="text.secondary">Select a report from the list on the left to view its detailed analytics.</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400, flexDirection: 'column', color: 'text.secondary' }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Select a report from the list on the left
+                </Typography>
+                <Typography>
+                  View detailed analytics and visualizations for your selected report
+                </Typography>
+              </Box>
             ) : isAnalyticsLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+                <CircularProgress />
+              </Box>
             ) : (
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom><BarChartIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> Fund Flow</Typography>
+              <Box sx={{ mt: 2 }}>
+                {/* Sankey Chart - Full width (move this above the Pie/Bar Grid) */}
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 0,
+                    bgcolor: 'rgba(0, 0, 0, 0.2)',
+                    borderRadius: 2,
+                    mb: 3,
+                    width: '100%',
+                    overflow: 'hidden',
+                    height: 800
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, p: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <BarChartIcon />
+                      <Typography variant="h6">Fund Flow</Typography>
+                    </Box>
+                    <Tooltip title="Expand Chart">
+                      <IconButton onClick={() => handleOpenFullscreen('Fund Flow', <SankeyChart data={analyticsData.flowchart} />)}>
+                        <FullscreenIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Box sx={{ height: 500, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <SankeyChart data={analyticsData.flowchart} />
-                  </Paper>
+                  </Box>
+                </Paper>
+                {/* Pie and Bar Chart Row */}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        height: 500,
+                        width: 400,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <PieChartIcon />
+                        <Typography variant="h6">Spending by Department</Typography>
+                        <Tooltip title="Expand Chart">
+                          <IconButton onClick={() => handleOpenFullscreen('Spending by Department', <DepartmentPieChart data={analyticsData.departmentShare} />)}>
+                            <FullscreenIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      <Box sx={{ height: 1000, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <DepartmentPieChart data={analyticsData.departmentShare} />
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={8}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        height: 500,
+                        width: 800,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <TrendingUp />
+                        <Typography variant="h6">Spending Trend</Typography>
+                        <Tooltip title="Expand Chart">
+                          <IconButton onClick={() => handleOpenFullscreen('Spending Trend', <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />)}>
+                            <FullscreenIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      <Box sx={{ height: 1000, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />
+                      </Box>
+                    </Paper>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom><PieChartIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> Spending by Department</Typography>
-                    <DepartmentPieChart data={analyticsData.departmentShare} />
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom><TrendingUp sx={{ verticalAlign: 'middle', mr: 1 }} /> Spending Trend</Typography>
-                    <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />
-                  </Paper>
-                </Grid>
-              </Grid>
+              </Box>
             )}
           </Paper>
         </Grid>
@@ -251,10 +361,22 @@ const InstitutionDashboard = () => {
           <FormControl fullWidth margin="normal" required>
             <InputLabel>Report Type</InputLabel>
             <Select value={newReportType} label="Report Type" onChange={e => setNewReportType(e.target.value)}>
-              <MenuItem value="monthly">Monthly</MenuItem><MenuItem value="quarterly">Quarterly</MenuItem><MenuItem value="annual">Annual</MenuItem><MenuItem value="project">Project-Based</MenuItem><MenuItem value="other">Other</MenuItem>
+              <MenuItem value="monthly">Monthly</MenuItem>
+              <MenuItem value="quarterly">Quarterly</MenuItem>
+              <MenuItem value="annual">Annual</MenuItem>
+              <MenuItem value="project">Project-Based</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
-          <TextField type="date" value={newReportDate} onChange={e => setNewReportDate(e.target.value)} fullWidth margin="normal" InputLabelProps={{ shrink: true }} required />
+          <TextField 
+            type="date" 
+            value={newReportDate} 
+            onChange={e => setNewReportDate(e.target.value)} 
+            fullWidth 
+            margin="normal" 
+            InputLabelProps={{ shrink: true }} 
+            required 
+          />
           <Button variant="outlined" component="label" fullWidth sx={{ mt: 2 }}>
             Select Transaction File (CSV or PDF)
             <input type="file" hidden onChange={e => setSelectedFile(e.target.files[0])} accept=".csv,.pdf" />
@@ -263,6 +385,28 @@ const InstitutionDashboard = () => {
           <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>Submit Report</Button>
         </Box>
       </Modal>
+
+      {/* --- DIALOG FOR FULLSCREEN CHARTS --- */}
+      <Dialog
+        fullScreen
+        open={fullscreenContent.open}
+        onClose={handleCloseFullscreen}
+        PaperProps={{ sx: { bgcolor: '#1E1E1E' } }}
+      >
+        <AppBar sx={{ position: 'relative' }}>
+          <Toolbar>
+            <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+              {fullscreenContent.title}
+            </Typography>
+            <IconButton edge="end" color="inherit" onClick={handleCloseFullscreen} aria-label="close">
+              <CloseIcon />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+        <Box sx={{ width: '100%', height: 'calc(100% - 64px)', p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {fullscreenContent.ChartComponent}
+        </Box>
+      </Dialog>
     </Container>
   );
 };
