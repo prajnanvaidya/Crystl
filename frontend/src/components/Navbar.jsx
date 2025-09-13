@@ -91,40 +91,46 @@ const Navbar = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="hidden md:flex items-center space-x-3">
-            {user ? (
-              <>
-                <RouterLink 
-                  to="/dashboard" 
-                  className="bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300 flex items-center space-x-1"
-                >
-                  <span>Dashboard</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-md text-xs">({user.name})</span>
-                </RouterLink>
-                <button 
-                  onClick={handleLogout} 
-                  className="text-gray-600 hover:text-[#0B95D6] px-4 py-2 text-sm font-medium transition-colors duration-300 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <RouterLink 
-                  to="/login" 
-                  className="text-gray-600 hover:text-[#0B95D6] px-4 py-2 text-sm font-medium transition-colors duration-300 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50"
-                >
-                  Log In
-                </RouterLink>
-                <RouterLink 
-                  to="/register" 
-                  className="bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300"
-                >
-                  Sign Up
-                </RouterLink>
-              </>
-            )}
-          </div>
+<div className="hidden md:flex items-center space-x-3">
+  {user ? (
+    <>
+      {/* Welcome Card */}
+      <div className="bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-400/20">
+        <p className="text-md text-black">
+          Welcome, <span className="font-semibold">{user.name}</span>
+        </p>
+      </div>
+      
+      <RouterLink 
+        to="/dashboard" 
+        className="bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300"
+      >
+        Dashboard
+      </RouterLink>
+      <button 
+        onClick={handleLogout} 
+        className="text-gray-600 hover:text-[#0B95D6] px-4 py-2 text-sm font-medium transition-colors duration-300 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50"
+      >
+        Logout
+      </button>
+    </>
+  ) : (
+    <>
+      <RouterLink 
+        to="/login" 
+        className="text-gray-600 hover:text-[#0B95D6] px-4 py-2 text-sm font-medium transition-colors duration-300 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50"
+      >
+        Log In
+      </RouterLink>
+      <RouterLink 
+        to="/register" 
+        className="bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300"
+      >
+        Sign Up
+      </RouterLink>
+    </>
+  )}
+</div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
