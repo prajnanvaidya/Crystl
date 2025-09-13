@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext } from 'react';
 const CurrencyContext = createContext();
 
 // Fixed rate for the hackathon
-const USD_TO_INR_RATE = 88;
+const USD_TO_INR_RATE = 88.27;
 
 export const CurrencyProvider = ({ children }) => {
   const [currency, setCurrency] = useState('USD'); // Default currency
