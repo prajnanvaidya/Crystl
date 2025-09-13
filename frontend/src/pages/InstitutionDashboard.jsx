@@ -1,25 +1,30 @@
+// src/pages/InstitutionDashboard.jsx - COMPLETE with Enhanced Shadows
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+
+// --- Icon Imports ---
 import {
-  BarChart as BarChartIcon, 
-  PieChart as PieChartIcon, 
-  TrendingUp,
-  Fullscreen as FullscreenIcon, 
-  Close as CloseIcon,
   Add as AddIcon,
   Link as LinkIcon,
   Description as DescriptionIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  BarChart as BarChartIcon,
+  PieChart as PieChartIcon,
+  TrendingUp,
+  Fullscreen as FullscreenIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
+import { CloudUploadIcon } from '@heroicons/react/solid';
 
-// Import Chart Components
+// --- Chart Component Imports ---
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
 import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
 const InstitutionDashboard = () => {
-  // State management
+  // --- STATE MANAGEMENT (No changes to logic) ---
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,11 +32,7 @@ const InstitutionDashboard = () => {
   const [linkedDepartments, setLinkedDepartments] = useState([]);
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [analyticsData, setAnalyticsData] = useState({ 
-    flowchart: null, 
-    departmentShare: null, 
-    spendingTrend: null 
-  });
+  const [analyticsData, setAnalyticsData] = useState({ flowchart: null, departmentShare: null, spendingTrend: null });
   const [trendGroupBy, setTrendGroupBy] = useState('monthly');
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [departmentIdToLink, setDepartmentIdToLink] = useState('');
@@ -40,13 +41,9 @@ const InstitutionDashboard = () => {
   const [newReportType, setNewReportType] = useState('monthly');
   const [newReportDate, setNewReportDate] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [fullscreenContent, setFullscreenContent] = useState({ 
-    open: false, 
-    title: '', 
-    ChartComponent: null 
-  });
+  const [fullscreenContent, setFullscreenContent] = useState({ open: false, title: '', ChartComponent: null });
 
-  // Data fetching
+  // --- DATA FETCHING (No changes to logic) ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -66,7 +63,7 @@ const InstitutionDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Handlers
+  // --- HANDLERS (No changes to logic) ---
   const handleLinkDepartment = async (e) => {
     e.preventDefault();
     setError('');
@@ -160,13 +157,17 @@ const InstitutionDashboard = () => {
     setFullscreenContent({ open: false, title: '', ChartComponent: null });
   };
 
-  // Render logic
+
+  // --- RENDER LOGIC (Visually Upgraded) ---
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+          <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="mt-4 text-gray-600 font-medium">Loading dashboard data...</p>
         </div>
       </div>
     );
@@ -174,328 +175,114 @@ const InstitutionDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl text-center font-bold text-gray-900">Institution Dashboard</h1>
-          <p className="text-gray-600 text-center">Manage reports, departments, and view analytics</p>
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 leading-tight">Welcome, {user?.name}</h1>
+              <p className="mt-1 text-md text-gray-500">Here’s your institution’s financial command center.</p>
+            </div>
+            <button className="mt-4 sm:mt-0 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg" onClick={() => setIsModalOpen(true)}>
+              <AddIcon className="mr-2" /> Create New Report
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Success and Error Alerts */}
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-            </svg>
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-            </svg>
-            {error}
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {success && <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-md mb-6 shadow-sm" role="alert"><p className="font-bold">Success</p><p>{success}</p></div>}
+        {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-md mb-6 shadow-sm" role="alert"><p className="font-bold">Error</p><p>{error}</p></div>}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* LEFT COLUMN */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Management Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <BusinessIcon className="mr-2 text-blue-600" />
-                Management
-              </h3>
-              <button 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center mb-4 transition-colors"
-                onClick={() => setIsModalOpen(true)}
-              >
-                <AddIcon className="mr-2" />
-                Create New Report
-              </button>
-              
-              <div className="border-t border-gray-200 my-4"></div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-3 text-gray-700 flex items-center">
-                  <LinkIcon className="mr-2 text-blue-600" />
-                  Link a Department
-                </h4>
-                <form onSubmit={handleLinkDepartment}>
-                  <input
-                    type="text"
-                    placeholder="Enter Department ID"
-                    value={departmentIdToLink}
-                    onChange={e => setDepartmentIdToLink(e.target.value)}
-                    className="w-full p-3 mb-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    required
-                  />
-                  <button 
-                    type="submit" 
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
-                  >
-                    Link Department
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <aside className="lg:col-span-4 xl:col-span-3 space-y-8">
+            {/* --- CHANGE #1: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><DescriptionIcon className="mr-2 text-blue-600" />Submitted Reports</h3>
+              <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                {reports.length > 0 ? reports.map(report => (
+                  <button key={report._id} className={`w-full text-left p-3 rounded-lg transition-all duration-200 border-2 ${selectedReport?._id === report._id ? 'bg-blue-50 border-blue-500 text-blue-800 shadow-inner' : 'bg-gray-50 border-transparent hover:bg-gray-100 hover:border-gray-200 text-gray-700'}`} onClick={() => handleSelectReport(report)}>
+                    <div className="font-semibold truncate">{report.name}</div>
+                    <div className="text-xs text-gray-500 mt-1">{new Date(report.reportDate).toLocaleDateString()} • {report.type}</div>
                   </button>
-                </form>
+                )) : <div className="text-center py-6 text-gray-500"><DescriptionIcon className="mx-auto text-gray-300 mb-2" style={{ fontSize: '2.5rem' }} /><p>No reports submitted yet.</p></div>}
               </div>
             </div>
 
-            {/* Submitted Reports Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <DescriptionIcon className="mr-2 text-blue-600" />
-                Submitted Reports
-              </h3>
-              <div className="max-h-72 overflow-y-auto">
-                {reports.length > 0 ? (
-                  <ul className="space-y-2">
-                    {reports.map(report => (
-                      <li key={report._id}>
-                        <button
-                          className={`w-full text-left p-3 rounded-lg text-sm transition-colors ${
-                            selectedReport?._id === report._id 
-                              ? 'bg-blue-50 border border-blue-200 text-blue-700' 
-                              : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                          }`}
-                          onClick={() => handleSelectReport(report)}
-                        >
-                          <div className="font-medium truncate">{report.name}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(report.reportDate).toLocaleDateString()} • {report.type}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <DescriptionIcon className="mx-auto text-gray-300 mb-2" style={{ fontSize: '2.5rem' }} />
-                    <p>No reports submitted yet.</p>
-                  </div>
-                )}
+            {/* --- CHANGE #2: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><LinkIcon className="mr-2 text-blue-600" />Link a Department</h3>
+              <form onSubmit={handleLinkDepartment} className="space-y-3">
+                <input type="text" placeholder="Enter Department ID (e.g., DEPT-..)" value={departmentIdToLink} onChange={e => setDepartmentIdToLink(e.target.value)} className="w-full p-3 text-black rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow" required />
+                <button type="submit" className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300 transform hover:scale-105">Link Department</button>
+              </form>
+            </div>
+            
+            {/* --- CHANGE #3: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><BusinessIcon className="mr-2 text-blue-600" />Linked Departments</h3>
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                {linkedDepartments.length > 0 ? linkedDepartments.map(dept => (
+                  <div key={dept._id} className="p-3 bg-gray-100 rounded-lg text-sm font-medium text-gray-800">{dept.name}</div>
+                )) : <div className="text-center py-4 text-gray-500"><p>No departments linked.</p></div>}
               </div>
             </div>
+          </aside>
 
-            {/* Linked Departments Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <BusinessIcon className="mr-2 text-blue-600" />
-                Linked Departments
-              </h3>
-              <div className="max-h-48 overflow-y-auto">
-                {linkedDepartments.length > 0 ? (
-                  <ul className="space-y-2">
-                    {linkedDepartments.map(dept => (
-                      <li key={dept._id} className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                        {dept.name}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <p>No departments linked yet.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[600px]">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                {selectedReport ? `Analytics for "${selectedReport.name}"` : 'Report Analytics'}
-              </h2>
-              
+          {/* RIGHT COLUMN (ANALYTICS) */}
+          <section className="lg:col-span-8 xl:col-span-9">
+            {/* --- CHANGE #4: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[80vh] shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               {!selectedReport ? (
-                <div className="flex flex-col justify-center items-center h-96 text-gray-400">
-                  <BarChartIcon style={{ fontSize: '4rem', marginBottom: '1rem' }} />
-                  <h3 className="text-lg mb-2 text-gray-500">Select a report to view analytics</h3>
-                  <p className="text-center max-w-md">Choose a report from the list on the left to see detailed analytics and visualizations</p>
-                </div>
+                <div className="flex flex-col justify-center items-center h-full text-gray-400 text-center"><BarChartIcon style={{ fontSize: '4rem', marginBottom: '1rem' }} /><h3 className="text-xl font-semibold text-gray-600">Analytics Dashboard</h3><p className="mt-2 max-w-md">Please select a report from the list on the left to visualize its financial data.</p></div>
               ) : isAnalyticsLoading ? (
-                <div className="flex justify-center items-center h-96">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading analytics data...</p>
-                  </div>
-                </div>
+                <div className="flex justify-center items-center h-full"><div className="text-center"><svg className="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p className="mt-4 text-gray-600 font-medium">Loading analytics data...</p></div></div>
               ) : (
-                <div className="space-y-6">
-                  {/* Sankey Chart - Full width */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 w-full h-[500px] overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-2">
-                        <BarChartIcon className="text-blue-600" />
-                        <h3 className="text-lg font-medium text-gray-900">Fund Flow</h3>
-                      </div>
-                      <button 
-                        className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-                        onClick={() => handleOpenFullscreen('Fund Flow', <SankeyChart data={analyticsData.flowchart} />)}
-                      >
-                        <FullscreenIcon />
-                      </button>
-                    </div>
-                    <div className="h-[420px] w-full flex items-center justify-center bg-white rounded-lg border border-gray-200">
-                      <SankeyChart data={analyticsData.flowchart} />
-                    </div>
-                  </div>
-
-                  {/* Pie and Bar Chart Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1 bg-gray-50 border border-gray-200 rounded-xl p-4 h-[400px] flex flex-col">
-                      <div className="flex items-center mb-4">
-                        <PieChartIcon className="text-blue-600 mr-2" />
-                        <h3 className="text-lg font-medium text-gray-900">Spending by Department</h3>
-                        <button 
-                          className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 ml-auto"
-                          onClick={() => handleOpenFullscreen(
-                            'Spending by Department', 
-                            <DepartmentPieChart data={analyticsData.departmentShare} />
-                          )}
-                        >
-                          <FullscreenIcon />
-                        </button>
-                      </div>
-                      <div className="h-full w-full flex items-center justify-center bg-white rounded-lg border border-gray-200">
-                        <DepartmentPieChart data={analyticsData.departmentShare} />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 h-[400px] flex flex-col">
-                      <div className="flex items-center mb-4">
-                        <TrendingUp className="text-blue-600 mr-2" />
-                        <h3 className="text-lg font-medium text-gray-900">Spending Trend</h3>
-                        <button 
-                          className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 ml-auto"
-                          onClick={() => handleOpenFullscreen(
-                            'Spending Trend', 
-                            <SpendingTrendChart 
-                              data={analyticsData.spendingTrend} 
-                              groupBy={trendGroupBy} 
-                              handleFilterChange={handleTrendFilterChange} 
-                            />
-                          )}
-                        >
-                          <FullscreenIcon />
-                        </button>
-                      </div>
-                      <div className="h-full w-full flex items-center justify-center bg-white rounded-lg border border-gray-200">
-                        <SpendingTrendChart 
-                          data={analyticsData.spendingTrend} 
-                          groupBy={trendGroupBy} 
-                          handleFilterChange={handleTrendFilterChange} 
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-8">
+                   <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-4 relative h-[500px] flex flex-col"><div className="flex justify-between items-center mb-2"><h4 className="text-lg font-semibold text-gray-800 flex items-center"><BarChartIcon className="mr-2 text-blue-600" />Fund Flow</h4><button className="text-gray-400 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors" onClick={() => handleOpenFullscreen('Fund Flow', <SankeyChart data={analyticsData.flowchart} />)}><FullscreenIcon /></button></div><div className="flex-grow w-full h-full"><SankeyChart data={analyticsData.flowchart} /></div></div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-4 relative h-[400px] flex flex-col"><div className="flex justify-between items-center mb-2"><h4 className="text-lg font-semibold text-gray-800 flex items-center"><PieChartIcon className="mr-2 text-blue-600" />Department Spending</h4><button className="text-gray-400 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors" onClick={() => handleOpenFullscreen('Spending by Department', <DepartmentPieChart data={analyticsData.departmentShare} />)}><FullscreenIcon /></button></div><div className="flex-grow w-full h-full"><DepartmentPieChart data={analyticsData.departmentShare} /></div></div>
+                    <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-4 relative h-[400px] flex flex-col"><div className="flex justify-between items-center mb-2"><h4 className="text-lg font-semibold text-gray-800 flex items-center"><TrendingUp className="mr-2 text-blue-600" />Spending Trend</h4><button className="text-gray-400 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors" onClick={() => handleOpenFullscreen('Spending Trend', <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />)}><FullscreenIcon /></button></div><div className="flex-grow w-full h-full"><SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} /></div></div>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
 
-      {/* Modal for New Report */}
+      {/* --- MODAL (unchanged but restyled for completeness) --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Create and Upload New Report</h2>
-            <form onSubmit={handleUploadReport}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">Report Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter report name"
-                  value={newReportName}
-                  onChange={e => setNewReportName(e.target.value)}
-                  className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Create & Upload New Report</h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><CloseIcon /></button>
+            </div>
+            <form onSubmit={handleUploadReport} className="space-y-4">
+              <div><label className="block text-gray-700 text-sm font-medium mb-1">Report Name</label><input type="text" placeholder="e.g., Q3 Financial Summary" value={newReportName} onChange={e => setNewReportName(e.target.value)} className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-gray-700 text-sm font-medium mb-1">Report Type</label><select value={newReportType} onChange={e => setNewReportType(e.target.value)} className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option><option value="project">Project-Based</option><option value="other">Other</option></select></div>
+                <div><label className="block text-gray-700 text-sm font-medium mb-1">Report Date</label><input type="date" value={newReportDate} onChange={e => setNewReportDate(e.target.value)} className="text-black w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required /></div>
               </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">Report Type</label>
-                <select
-                  value={newReportType}
-                  onChange={e => setNewReportType(e.target.value)}
-                  className="w-full text-black p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annual">Annual</option>
-                  <option value="project">Project-Based</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">Report Date</label>
-                <input
-                  type="date"
-                  value={newReportDate}
-                  onChange={e => setNewReportDate(e.target.value)}
-                  className="text-black w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-medium mb-2">Transaction File</label>
-                <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                  <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  <span className="text-sm text-gray-500">
-                    {selectedFile ? selectedFile.name : 'Click to upload CSV or PDF file'}
-                  </span>
-                  <input 
-                    type="file" 
-                    className="hidden text-black" 
-                    onChange={e => setSelectedFile(e.target.files[0])} 
-                    accept=".csv,.pdf" 
-                  />
-                </label>
-              </div>
-              
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors"
-                >
-                  Submit Report
-                </button>
+              <div><label className="block text-gray-700 text-sm font-medium mb-2">Transaction File</label><label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"><CloudUploadIcon className="w-10 h-10 text-gray-400 mb-2" /><span className="text-sm text-gray-600 font-semibold">{selectedFile ? selectedFile.name : 'Click to upload CSV or PDF'}</span><span className="text-xs text-gray-500 mt-1">Maximum file size: 10MB</span><input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} accept=".csv,.pdf" /></label></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+                <button type="button" className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition-colors" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-blue-600 rounded-lg text-white font-semibold hover:bg-blue-700 transition-colors">Submit Report</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Fullscreen Chart Dialog */}
+      {/* --- FULLSCREEN DIALOG (unchanged but restyled for completeness) --- */}
       {fullscreenContent.open && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
           <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
             <h3 className="text-xl font-semibold text-gray-900">{fullscreenContent.title}</h3>
-            <button 
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-              onClick={handleCloseFullscreen}
-            >
-              <CloseIcon />
-            </button>
+            <button className="text-gray-500 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100" onClick={handleCloseFullscreen}><CloseIcon /></button>
           </div>
-          <div className="flex-1 p-4 flex items-center justify-center bg-gray-50">
-            {fullscreenContent.ChartComponent}
+          <div className="flex-1 p-6 flex items-center justify-center bg-gray-50">
+            {React.cloneElement(fullscreenContent.ChartComponent, { isFullscreen: true })}
           </div>
         </div>
       )}
