@@ -22,6 +22,10 @@ const connectDB = require('./db/connect');
 const authRouter = require('./routes/authRoutes');
 const institutionRouter = require('./routes/institutionRoutes');
 const departmentRouter = require('./routes/departmentRoutes');
+const publicRouter = require('./routes/publicRoutes');
+const userRouter = require('./routes/userRoutes');
+const chatRouter = require('./routes/chatRoutes');
+const chatbotRouter = require('./routes/chatbotRoutes');
 // Add other routers as you create them (e.g., flowchartRouter, userRouter)
 
 // --- Middleware Imports ---
@@ -52,6 +56,10 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/institution', institutionRouter);
 app.use('/api/v1/department', departmentRouter);
+app.use('/api/v1/public', publicRouter); 
+app.use('/api/v1/user', userRouter);
+app.use('/api/v1/chat', chatRouter);
+app.use('/api/v1/chatbot', chatbotRouter);
 // app.use('/api/v1/user', userRouter);
 // app.use('/api/v1/public', publicRouter); // for flowchart data, etc.
 
