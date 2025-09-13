@@ -1,69 +1,57 @@
-import React, { useMemo } from 'react';
-import { Chart } from 'react-google-charts';
+// src/components/charts/SankeyChart.jsx
 
-// Custom options to style the Sankey diagram
-export const options = {
+import React from 'react';
+import { Chart } from 'react-google-charts';
+import { Box, Typography } from '@mui/material';
+
+// FIX: Removed the 'export' keyword. 
+// This is now a local constant, which is correct.
+const options = {
   sankey: {
     node: {
-      colors: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c'],
-      label: { color: '#000' },
+      colors: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00c49f'],
+      label: { 
+        color: '#ffffff',
+        fontName: 'Roboto', 
+        fontSize: 14 
+      },
+      interactivity: true,
     },
     link: {
       colorMode: 'gradient',
-      colors: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c'],
+      colors: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00c49f'],
     },
   },
+  backgroundColor: 'transparent',
 };
 
 const SankeyChart = ({ data }) => {
-  // useMemo is a React hook that memoizes the result of a function.
-  // This ensures our data transformation logic only runs when the input 'data' prop changes.
-  const sankeyData = useMemo(() => {
-    // If there's no data or no allocations, return null to show the loading/empty message
-    if (!data || !data.allocations || data.allocations.length === 0) {
-      return null;
-    }
+  const chartData = data?.sankeyData;
 
-    // The first row of the data must be the column headers
-    const chartData = [['From', 'To', 'Amount']];
-
-    const institutionName = data.institution.name;
-
-    // Iterate over each department allocation from the API response
-    data.allocations.forEach(allocation => {
-      const departmentName = allocation.departmentName;
-      const departmentTotal = allocation.departmentTotal;
-
-      // 1. Create the flow from the main Institution to the Department
-      if (departmentTotal > 0) {
-        chartData.push([institutionName, departmentName, departmentTotal]);
-      }
-      
-      // 2. Create the sub-flows from the Department to their final status (completed, disputed, etc.)
-      allocation.breakdown.forEach(breakdownItem => {
-        if (breakdownItem.amount > 0) {
-            // Capitalize the status for better readability in the chart
-            const statusCapitalized = breakdownItem.status.charAt(0).toUpperCase() + breakdownItem.status.slice(1).replace('_', ' ');
-            chartData.push([departmentName, statusCapitalized, breakdownItem.amount]);
-        }
-      });
-    });
-
-    return chartData;
-  }, [data]); // The dependency array: this code re-runs only if 'data' changes
-
-  // --- RENDER LOGIC ---
-  if (!sankeyData) {
-    return <p>No fund flow data available. Approve transactions to see the flow.</p>;
+  if (!chartData || chartData.length <= 1) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Typography color="text.secondary" textAlign="center">
+          No fund flow data available.
+          <br />
+          Approve allocations and log department spending to see the flow.
+        </Typography>
+      </Box>
+    );
   }
 
   return (
     <Chart
       chartType="Sankey"
       width="100%"
-      height="300px"
-      data={sankeyData}
-      options={options}
+      height="100%"
+      data={chartData}
+      options={options} // The local constant is used here correctly.
+      loader={
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Typography color="text.secondary">Loading Chart...</Typography>
+        </Box>
+      }
     />
   );
 };

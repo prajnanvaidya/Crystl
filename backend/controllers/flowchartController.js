@@ -1,99 +1,92 @@
 // server/controllers/flowchartController.js
 
-const Transaction = require('../models/Transaction');
-const Institution = require('../models/Institution'); // We need this to get institution details
+const Transaction = require('../models/Transaction'); // Represents Institution -> Department allocations
+const DepartmentTransaction = require('../models/DepartmentTransaction'); // Represents Department -> Project/Vendor spending
+const Institution = require('../models/Institution');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
-const mongoose = require('mongoose'); // Needed for checking valid ObjectId
+const mongoose = require('mongoose');
 
 // =============================================
-// ==      GET FLOWCHART DATA                 ==
+// ==      GET MULTI-LEVEL FLOWCHART DATA     ==
 // =============================================
 const getFlowchartData = async (req, res) => {
-  const { institutionId } = req.params; // Get the ID from the URL
+  const { institutionId } = req.params;
 
-  // A small validation check to ensure the provided ID is in a valid format
+  // Validate the incoming institution ID
   if (!mongoose.Types.ObjectId.isValid(institutionId)) {
     throw new CustomError.BadRequestError('Invalid Institution ID format');
   }
   
-  // Find the institution to make sure it exists
-  const institution = await Institution.findById(institutionId);
+  // Find the institution to get its name and ensure it exists
+  const institution = await Institution.findById(institutionId).select('name');
   if (!institution) {
     throw new CustomError.NotFoundError(`No institution found with id: ${institutionId}`);
   }
   
   try {
-    // This is the core logic: The MongoDB Aggregation Pipeline
-    const aggregationPipeline = [
-      // Stage 1: Match only the transactions for the requested institution
-      {
-        $match: {
-          institution: new mongoose.Types.ObjectId(institutionId)
-        }
-      },
-      // Stage 2: Group documents by BOTH department and status to sum their amounts
-      {
-        $group: {
-          _id: {
-            department: '$department',
-            status: '$status'
-          },
-          totalAmount: { $sum: '$amount' }
-        }
-      },
-      // Stage 3: Group again, this time just by department, to collect all statuses under one roof
-      {
-        $group: {
-          _id: '$_id.department',
-          statuses: {
-            $push: {
-              status: '$_id.status',
-              amount: '$totalAmount'
-            }
-          },
-          departmentTotal: { $sum: '$totalAmount' } // Calculate total for the whole department
-        }
-      },
-      // Stage 4: Join with the 'departments' collection to get the department's name
-      {
-        $lookup: {
-          from: 'departments',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'departmentInfo'
-        }
-      },
-      // Stage 5: Reshape and clean up the final output for the frontend
-      {
-        $project: {
-          _id: 0, // Exclude the default MongoDB _id
-          departmentId: '$_id',
-          departmentName: { $arrayElemAt: ['$departmentInfo.name', 0] },
-          departmentTotal: 1, // Include the department total
-          breakdown: '$statuses' // The array of statuses and amounts
-        }
-      }
-    ];
-
-    const allocations = await Transaction.aggregate(aggregationPipeline);
+    // --- Step 1: Fetch Both Levels of Transactions in Parallel for efficiency ---
     
-    // Calculate the grand total of all transactions for the institution
-    const grandTotal = allocations.reduce((acc, dept) => acc + dept.departmentTotal, 0);
+    // Level 1 Query: Get all COMPLETED allocations from the Institution to its Departments
+    const institutionToDeptPromise = Transaction.find({
+      institution: institutionId,
+      status: 'completed' // Only include funds that have been approved
+    }).populate('department', 'name');
 
+    // Level 2 Query: Get all spending logged by the Departments of this Institution
+    const departmentToRecipientPromise = DepartmentTransaction.find({
+      institution: institutionId,
+    }).populate('department', 'name');
+
+    // Await both promises to resolve
+    const [allocations, spending] = await Promise.all([
+      institutionToDeptPromise,
+      departmentToRecipientPromise
+    ]);
+
+    // --- Step 2: Combine the Data into the Sankey Chart's Required Format ['From', 'To', 'Amount'] ---
+    const chartData = [['From', 'To', 'Amount']]; // The mandatory header row
+    const institutionName = institution.name;
+
+    // Process Level 1 data (Institution -> Department)
+    allocations.forEach(alloc => {
+      // Check if the populated department and its name exist to prevent errors
+      if (alloc.department?.name) { 
+        chartData.push([
+          institutionName,
+          alloc.department.name,
+          alloc.amount
+        ]);
+      }
+    });
+
+    // Process Level 2 data (Department -> Project/Vendor)
+    spending.forEach(spend => {
+      // Check if the populated department and its name exist
+      if (spend.department?.name) {
+        chartData.push([
+          spend.department.name,
+          spend.recipient, // This is the simple text field for Project/Vendor
+          spend.amount
+        ]);
+      }
+    });
+
+    // --- Step 3: Send the Final, Combined Data to the Frontend ---
     res.status(StatusCodes.OK).json({
       institution: {
         id: institution._id,
         name: institution.name,
       },
-      totalAllocated: grandTotal,
-      allocations: allocations,
+      // The frontend SankeyChart component will now receive this pre-formatted array.
+      // It no longer needs to do any data transformation.
+      sankeyData: chartData,
     });
 
   } catch (error) {
-    // This will catch any errors from the aggregation pipeline
-    console.error('Aggregation Error:', error);
-    throw new CustomError.InternalServerError('Error generating flowchart data');
+    // Catch any unexpected errors during the process
+    console.error('Flowchart Data Generation Error:', error);
+    throw new CustomError.InternalServerError('An error occurred while generating the flowchart data');
   }
 };
 
