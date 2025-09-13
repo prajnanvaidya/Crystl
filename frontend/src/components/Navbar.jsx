@@ -100,13 +100,7 @@ const Navbar = () => {
           Welcome, <span className="font-semibold">{user.name}</span>
         </p>
       </div>
-      
-      <RouterLink 
-        to="/dashboard" 
-        className="bg-gradient-to-r from-[#0B95D6] to-[#0A7BB8] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300"
-      >
-        Dashboard
-      </RouterLink>
+    
       <button 
         onClick={handleLogout} 
         className="text-gray-600 hover:text-[#0B95D6] px-4 py-2 text-sm font-medium transition-colors duration-300 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50"
