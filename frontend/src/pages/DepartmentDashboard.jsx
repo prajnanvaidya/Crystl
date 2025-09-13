@@ -1,108 +1,138 @@
-// src/pages/DepartmentDashboard.jsx - FULLY UPDATED AND COMPLETE
+// src/pages/DepartmentDashboard.jsx - FINAL COMPLETE VERSION
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { getErrorMessage } from '../services/errorHandler'; // <-- CHANGE #1: Import the helper
+import { getErrorMessage } from '../services/errorHandler';
 import {
-  Container,
-  Typography,
-  Grid,
-  Paper,
-  Box,
-  Alert,
-  CircularProgress,
-  List,
-  ListItem,
-  Card,
-  CardContent,
-  CardActions,
-  Chip,
-  Tooltip,
-  Button,
-  Divider,
-  Tabs,
-  Tab
+  Container, Typography, Grid, Paper, Box, Alert, CircularProgress,
+  List, ListItem, ListItemButton, ListItemText, ListItemIcon, Card, CardContent, CardActions,
+  Chip, Tooltip, Button, Divider, Tabs, Tab
 } from '@mui/material';
-// CHANGE #2: Imported ReportProblem icon for better error display
-import { CheckCircleOutline, ReportProblem, ContentCopy, Assessment, PendingActions } from '@mui/icons-material';
+import { 
+  CheckCircleOutline, ReportProblem, ContentCopy, Assessment, PendingActions, Description, 
+  Business as BusinessIcon 
+} from '@mui/icons-material';
 
-// --- (All chart components are assumed to be correctly imported) ---
+// --- Chart Component Imports ---
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
 import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
 const DepartmentDashboard = () => {
-  // --- (All state management remains exactly the same) ---
   const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
+  
+  // State for Approvals Tab
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [isApprovalsLoading, setIsApprovalsLoading] = useState(true);
   const [actionInProgress, setActionInProgress] = useState(null);
+  const [linkedDepartments, setLinkedDepartments] = useState([]);
+
+  // State for Analytics Tab
+  const [reports, setReports] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [trendGroupBy, setTrendGroupBy] = useState('monthly');
+  
+  // General UI State
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // --- DATA FETCHING (with updated catch blocks) ---
+  // --- DATA FETCHING ---
+
+  // 1. Fetch initial dashboard data (approvals AND peer departments)
   useEffect(() => {
-    const fetchPendingTransactions = async () => {
+    const fetchInitialData = async () => {
       setIsApprovalsLoading(true);
-      setError(''); // Clear previous errors
+      setError('');
       try {
-        const { data } = await api.get('/department/pending-transactions');
-        setPendingTransactions(data.transactions);
+        const transactionsPromise = api.get('/department/pending-transactions');
+        
+        const promisesToRun = [transactionsPromise];
+        
+        if (user?.linkedInstitution) {
+          promisesToRun.push(api.get(`/public/institution/${user.linkedInstitution}/departments`));
+        }
+
+        const responses = await Promise.all(promisesToRun);
+
+        setPendingTransactions(responses[0].data.transactions);
+        
+        if (responses[1]) {
+          const peerDepartments = responses[1].data.departments.filter(dept => dept.name !== user.name);
+          setLinkedDepartments(peerDepartments);
+        }
+
       } catch (err) {
-        // CHANGE #3: Use the helper for a more specific error message
-        setError(getErrorMessage(err, 'Failed to fetch pending approvals.'));
+        setError(getErrorMessage(err, 'Failed to fetch initial dashboard data.'));
       } finally {
         setIsApprovalsLoading(false);
       }
     };
-    fetchPendingTransactions();
-  }, []);
+    fetchInitialData();
+  }, [user]);
 
+  // 2. Fetch the list of reports when the user switches to the analytics tab
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (currentTab === 1 && user?.linkedInstitution) {
-        setIsAnalyticsLoading(true);
+    const fetchReports = async () => {
+      if (currentTab === 1 && user?.linkedInstitution && reports.length === 0) {
+        setIsReportsLoading(true);
         setError('');
         try {
-          const institutionId = user.linkedInstitution;
-          const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
-          const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
-          const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
-          const [flowchartRes, deptShareRes, trendRes] = await Promise.all([flowchartPromise, deptSharePromise, spendingTrendPromise]);
-          setAnalyticsData({
-            flowchart: flowchartRes.data,
-            departmentShare: deptShareRes.data.departmentShares,
-            spendingTrend: trendRes.data.spendingTrend,
-          });
+          const { data } = await api.get(`/public/institution/${user.linkedInstitution}/reports`);
+          setReports(data.reports);
         } catch (err) {
-          // CHANGE #4: Use the helper for a more specific error message
-          setError(getErrorMessage(err, 'Could not load institution analytics.'));
+          setError(getErrorMessage(err, 'Could not load institution reports.'));
         } finally {
-          setIsAnalyticsLoading(false);
+          setIsReportsLoading(false);
         }
       }
     };
-    fetchAnalytics();
-  }, [currentTab, user, trendGroupBy]);
+    fetchReports();
+  }, [currentTab, user, reports.length]);
 
-  // --- HANDLERS (with updated catch blocks) ---
-  const handleTabChange = (event, newValue) => setCurrentTab(newValue);
+  // --- HANDLERS ---
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+    setSelectedReport(null);
+    setAnalyticsData(null);
+  };
+  
+  const handleSelectReport = async (report) => {
+    setSelectedReport(report);
+    setIsAnalyticsLoading(true);
+    setError('');
+    try {
+      const institutionId = user.linkedInstitution;
+      const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
+      const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
+      const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
+      
+      const [flowchartRes, deptShareRes, trendRes] = await Promise.all([flowchartPromise, deptSharePromise, spendingTrendPromise]);
+      
+      setAnalyticsData({
+        flowchart: flowchartRes.data,
+        departmentShare: deptShareRes.data.departmentShares,
+        spendingTrend: trendRes.data.spendingTrend,
+      });
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not load analytics for the selected report.'));
+    } finally {
+      setIsAnalyticsLoading(false);
+    }
+  };
 
   const handleVerifyTransaction = async (transactionId, newStatus) => {
     setActionInProgress(transactionId);
-    setError('');
-    setSuccess('');
+    setError(''); setSuccess('');
     try {
       await api.patch(`/department/verify-transaction/${transactionId}`, { status: newStatus });
       setSuccess(`Transaction successfully marked as ${newStatus}.`);
       setPendingTransactions(prev => prev.filter(t => t._id !== transactionId));
     } catch (err) {
-      // CHANGE #5: Use the helper for a more specific error message
       setError(getErrorMessage(err, 'Failed to update transaction.'));
     } finally {
       setActionInProgress(null);
@@ -118,22 +148,19 @@ const DepartmentDashboard = () => {
   };
   
   const handleTrendFilterChange = (event, newGroupBy) => {
-    if (newGroupBy !== null) {
-      setTrendGroupBy(newGroupBy);
-    }
+    if (newGroupBy !== null) setTrendGroupBy(newGroupBy);
   };
 
-  // --- RENDER LOGIC (with updated feedback displays) ---
+  // --- RENDER LOGIC ---
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>Department Dashboard</Typography>
       <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>{user?.name}</Typography>
 
-      {/* CHANGE #6: Added dismissible functionality to the alerts for better UX */}
       {success && <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>{success}</Alert>}
       {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Paper sx={{ bgcolor: '#1E1E1E', p: { xs: 1, sm: 2, md: 3 } }}>
+      <Paper sx={{ bgcolor: '#1E1E1E', p: { xs: 1, sm: 2 } }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={currentTab} onChange={handleTabChange} aria-label="dashboard tabs">
             <Tab icon={<PendingActions />} iconPosition="start" label="Pending Approvals" />
@@ -148,7 +175,6 @@ const DepartmentDashboard = () => {
                 <Grid item xs={12} md={8}>
                   {pendingTransactions.length > 0 ? (
                     <List sx={{ p: 0 }}>
-                      {/* (This mapping logic remains unchanged) */}
                       {pendingTransactions.map((transaction) => (
                         <ListItem key={transaction._id} sx={{ px: 0, py: 1 }}>
                           <Card variant="outlined" sx={{ width: '100%', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
@@ -170,7 +196,6 @@ const DepartmentDashboard = () => {
                       ))}
                     </List>
                   ) : (
-                    // CHANGE #7: Added logic to show a styled error here if loading fails, otherwise show the "All Clear" message.
                     error ? (
                         <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255, 82, 82, 0.1)', color: 'error.light' }}>
                             <ReportProblem color="error" sx={{ fontSize: 48, mb: 2 }} />
@@ -186,15 +211,34 @@ const DepartmentDashboard = () => {
                     )
                   )}
                 </Grid>
+                
                 <Grid item xs={12} md={4}>
-                   {/* (This part remains unchanged) */}
-                   <Paper sx={{ p: 2.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                      <Typography variant="subtitle1" gutterBottom>Your Department ID</Typography>
-                      <Divider sx={{ my: 1.5 }} />
-                      <Tooltip title="Copy to Clipboard">
-                        <Chip icon={<ContentCopy />} label={user?.departmentId || 'Not available'} onClick={handleCopyToClipboard} sx={{ width: '100%', justifyContent: 'flex-start', mt: 1, p: 2.5, fontSize: '1rem', '&:hover': { bgcolor: 'primary.main', cursor: 'pointer' } }}/>
-                      </Tooltip>
-                  </Paper>
+                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <Paper sx={{ p: 2.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+                          <Typography variant="subtitle1" gutterBottom>Your Department ID</Typography>
+                          <Divider sx={{ my: 1.5 }} />
+                          <Tooltip title="Copy to Clipboard">
+                            <Chip icon={<ContentCopy />} label={user?.departmentId || 'Not available'} onClick={handleCopyToClipboard} sx={{ width: '100%', justifyContent: 'flex-start', mt: 1, p: 2.5, fontSize: '1rem', '&:hover': { bgcolor: 'primary.main', cursor: 'pointer' } }}/>
+                          </Tooltip>
+                      </Paper>
+
+                      <Paper sx={{ p: 2.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+                          <Typography variant="h6" gutterBottom>Peer Departments</Typography>
+                          <Divider sx={{ my: 1.5 }} />
+                          <List dense sx={{ maxHeight: 300, overflow: 'auto' }}>
+                              {linkedDepartments.length > 0 ? linkedDepartments.map(dept => (
+                                  <ListItem key={dept._id}>
+                                      <ListItemIcon><BusinessIcon fontSize="small" /></ListItemIcon>
+                                      <ListItemText primary={dept.name} />
+                                  </ListItem>
+                              )) : (
+                                  <ListItem>
+                                      <ListItemText primary="No other linked departments found." />
+                                  </ListItem>
+                              )}
+                          </List>
+                      </Paper>
+                   </Box>
                 </Grid>
               </Grid>
             )}
@@ -203,16 +247,61 @@ const DepartmentDashboard = () => {
 
         {currentTab === 1 && (
           <Box sx={{ pt: 3 }}>
-            {/* (This analytics tab logic remains unchanged) */}
-            {isAnalyticsLoading ? <CircularProgress /> : analyticsData ? (
-              <Grid container spacing={3}>
-                <Grid item xs={12}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Fund Flow</Typography><SankeyChart data={analyticsData.flowchart} /></Paper></Grid>
-                <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Spending by Department</Typography><DepartmentPieChart data={analyticsData.departmentShare} /></Paper></Grid>
-                <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Spending Trend</Typography><SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} /></Paper></Grid>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', height: '100%' }}>
+                  <Typography variant="h6" gutterBottom>Institution Reports</Typography>
+                  {isReportsLoading ? <CircularProgress /> : (
+                    <List dense sx={{ maxHeight: 600, overflow: 'auto' }}>
+                      {reports.length > 0 ? reports.map(report => (
+                        <ListItem key={report._id} disablePadding>
+                          <ListItemButton 
+                            selected={selectedReport?._id === report._id} 
+                            onClick={() => handleSelectReport(report)}
+                            sx={{ borderRadius: 1 }}
+                          >
+                            <ListItemIcon><Description sx={{ color: 'text.secondary' }} /></ListItemIcon>
+                            <ListItemText 
+                              primary={report.name} 
+                              secondary={`Date: ${new Date(report.reportDate).toLocaleDateString()}`} 
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                      )) : (
+                        <ListItem><ListItemText primary="No reports found for the linked institution." /></ListItem>
+                      )}
+                    </List>
+                  )}
+                </Paper>
               </Grid>
-            ) : (
-              <Typography>No analytics to display. Make sure you are linked to an institution.</Typography>
-            )}
+
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 3, bgcolor: 'rgba(255, 255, 255, 0.05)', minHeight: 600 }}>
+                  <Typography variant="h5" gutterBottom>
+                    {selectedReport ? `Analytics for "${selectedReport.name}"` : 'Report Analytics'}
+                  </Typography>
+                  
+                  {!selectedReport ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400, flexDirection: 'column', color: 'text.secondary' }}>
+                      <Typography variant="h6">Select a report from the list on the left</Typography>
+                      <Typography>View detailed analytics and visualizations.</Typography>
+                    </Box>
+                  ) : isAnalyticsLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : analyticsData ? (
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                      <Grid item xs={12}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)' }}><Typography variant="h6" gutterBottom>Fund Flow</Typography><SankeyChart data={analyticsData.flowchart} /></Paper></Grid>
+                      <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)' }}><Typography variant="h6" gutterBottom>Spending by Department</Typography><DepartmentPieChart data={analyticsData.departmentShare} /></Paper></Grid>
+                      <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)' }}><Typography variant="h6" gutterBottom>Spending Trend</Typography><SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} /></Paper></Grid>
+                    </Grid>
+                  ) : (
+                     <Typography>Could not load analytics data.</Typography>
+                  )}
+                </Paper>
+              </Grid>
+            </Grid>
           </Box>
         )}
       </Paper>
