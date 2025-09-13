@@ -6,8 +6,8 @@ import { CircularProgress, Box } from '@mui/material';
 // --- Layout & Page Imports ---
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
-// import LoginPage from './pages/LoginPage';
-// import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 // import Dashboard from './pages/Dashboard';
 
 // A simple component to protect routes
@@ -35,8 +35,8 @@ function App() {
         <Route element={<Layout />}>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<div>Login Page Placeholder</div>} />
-          <Route path="/register" element={<div>Register Page Placeholder</div>} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* Private/Protected Route */}
           <Route
