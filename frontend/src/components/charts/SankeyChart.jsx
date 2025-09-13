@@ -30,7 +30,7 @@ const SankeyChart = ({ data }) => {
 
   if (!chartData || chartData.length <= 1) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',width:'800' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <Typography color="text.secondary" textAlign="center">
           No fund flow data available.
           <br />
@@ -43,7 +43,7 @@ const SankeyChart = ({ data }) => {
   return (
     <Chart
       chartType="Sankey"
-      width="100%"
+      width="98%"
       height="100%"
       data={chartData}
       options={options} // The local constant is used here correctly.
