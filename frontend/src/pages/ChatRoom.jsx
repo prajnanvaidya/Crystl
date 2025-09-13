@@ -1,19 +1,8 @@
-// src/pages/ChatRoom.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import {
-  Box,
-  TextField,
-  Paper,
-  Typography,
-  CircularProgress,
-  Alert,
-  IconButton,
-} from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
+import { FaPaperPlane, FaSpinner, FaClock, FaArrowDown } from 'react-icons/fa';
 
 const ChatRoom = () => {
   const { conversationId } = useParams(); 
@@ -25,33 +14,38 @@ const ChatRoom = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showScrollButton, setShowScrollButton] = useState(false);
   
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  const checkScrollPosition = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    }
   };
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) return;
     try {
       const { data } = await api.get(`/chat/${conversationId}/messages`);
-      // Only update messages if there are new ones
-      setMessages(prevMessages => {
-        if (prevMessages.length !== data.messages.length) {
-          // If there are new messages and the last one is from someone else, scroll
-          if (data.messages.length > 0 && 
-              data.messages[data.messages.length - 1]?.sender._id !== user.userId) {
-            setTimeout(scrollToBottom, 100);
-          }
-          return data.messages;
-        }
-        return prevMessages;
-      });
+      setMessages(data.messages);
+      
+      // After fetching messages, check if we should scroll to bottom
+      setTimeout(() => {
+        checkScrollPosition();
+      }, 100);
     } catch (err) {
       console.error('Failed to fetch messages', err);
     }
-  }, [conversationId, user.userId]);
+  }, [conversationId]);
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -74,24 +68,15 @@ const ChatRoom = () => {
         setError('Failed to load forum thread.');
       } finally {
         setIsSessionLoading(false);
+        
+        // Scroll to bottom after initial load
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
       }
     };
     initializeChat();
   }, [conversationId]);
-
-  useEffect(() => {
-    if (!conversationId || isSessionLoading) return;
-    const intervalId = setInterval(() => { fetchMessages() }, 5000);
-    return () => clearInterval(intervalId);
-  }, [conversationId, isSessionLoading, fetchMessages]);
-
-  useEffect(() => {
-    const shouldScroll = messages.length > 0 && 
-      messages[messages.length - 1]?.sender._id === user.userId;
-    if (shouldScroll) {
-      scrollToBottom();
-    }
-  }, [messages, user.userId]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -104,6 +89,11 @@ const ChatRoom = () => {
     try {
       await api.post(`/chat/${conversationId}/messages`, { text: textToSend });
       await fetchMessages();
+      
+      // Scroll to bottom after sending a message
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     } catch (err) {
       setError('Failed to send the message.');
       setInput(textToSend);
@@ -112,184 +102,145 @@ const ChatRoom = () => {
     }
   };
 
+  // Format timestamp to readable format
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 24) {
+      // Today - show time only
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      // Show date and time
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
   if (isSessionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <CircularProgress sx={{ color: '#3b82f6' }} />
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading chat room...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-      <Paper
-        elevation={4}
-        sx={{
-          height: 'calc(100vh - 120px)',
-          display: 'flex',
-          flexDirection: 'column',
-          maxWidth: 800,
-          margin: '0 auto',
-          borderRadius: 2,
-          bgcolor: 'white',
-          border: '1px solid',
-          borderColor: 'rgba(255, 255, 255, 0.5)',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <Box 
-          sx={{ 
-            p: 3, 
-            borderBottom: 1, 
-            borderColor: 'rgba(59, 130, 246, 0.1)',
-            background: 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(8px)'
-          }}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+          <h1 className="text-2xl font-bold">{forumName}</h1>
+          <p className="text-blue-100 mt-1">Public Forum | Logged in as: {user.name}</p>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 m-4 rounded-lg flex justify-between items-center">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+              </svg>
+              {error}
+            </div>
+            <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* Messages Container */}
+        <div 
+          ref={messagesContainerRef}
+          className="h-96 overflow-y-auto p-6 bg-white/50 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent scrollbar-thumb-rounded-full relative"
+          style={{ scrollbarWidth: 'thin' }}
+          onScroll={checkScrollPosition}
         >
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              color: '#1e3a8a',
-              fontWeight: '600',
-              mb: 0.5
-            }}
-          >
-            {forumName}
-          </Typography>
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: '#4b5563'
-            }}
-          >
-            Public Forum | Logged in as: {user.name}
-          </Typography>
-        </Box>
+          <div className="space-y-4">
+            {messages.map((msg, idx) => (
+              <div key={msg._id} className="group">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-28">
+                    <div className={`text-sm font-medium ${
+                      msg.sender._id === user.userId ? 'text-blue-600' : 'text-gray-600'
+                    }`}>
+                      {msg.sender.name}
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500 mt-1">
+                      <FaClock className="mr-1 text-xs" />
+                      {formatTimestamp(msg.createdAt || msg.timestamp)}
+                    </div>
+                  </div>
+                  <div className={`flex-1 p-3 rounded-lg ${
+                    msg.sender._id === user.userId 
+                      ? 'bg-blue-100 border border-blue-200' 
+                      : 'bg-gray-100 border border-gray-200'
+                  }`}>
+                    <p className="text-gray-800 whitespace-pre-wrap break-words">{msg.text}</p>
+                  </div>
+                </div>
+                {idx < messages.length - 1 && (
+                  <div className="border-t border-gray-200 my-3 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* Scroll to bottom button */}
+          {showScrollButton && (
+            <button
+              onClick={scrollToBottom}
+              className="fixed bottom-36 right-1/2 transform translate-x-1/2 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-10"
+            >
+              <FaArrowDown />
+            </button>
+          )}
+        </div>
 
-      {error && <Alert severity="error" sx={{ m: 1, mx: 2 }}>{error}</Alert>}
+        {/* Input Form */}
+        <div className="border-t border-gray-200 p-6 bg-white">
+          <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+            <input
+              type="text"
+              placeholder="Type your message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={isLoading || isSessionLoading}
+              autoComplete="off"
+              className="flex-1 px-4 py-3 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || isSessionLoading || !input.trim()}
+              className="p-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 flex items-center justify-center shadow-md"
+            >
+              {isLoading ? (
+                <FaSpinner className="animate-spin text-lg" />
+              ) : (
+                <FaPaperPlane className="text-lg" />
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3, bgcolor: 'rgba(255, 255, 255, 0.5)' }}>
-        {messages.map((msg, idx) => (
-          <React.Fragment key={msg._id}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  minWidth: 120, 
-                  flexShrink: 0,
-                  color: '#4b5563',
-                  fontWeight: '600',
-                  pt: 0.5
-                }}
-              >
-                {msg.sender.name}
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  ml: 2,
-                  wordBreak: 'break-word',
-                  whiteSpace: 'pre-wrap',
-                  color: msg.sender._id === user.userId ? '#2563eb' : '#1f2937',
-                  fontWeight: msg.sender._id === user.userId ? '500' : '400',
-                  flex: 1,
-                  maxWidth: 'calc(100% - 140px)'  // account for name width and margin
-                }}
-              >
-                {msg.text}
-              </Typography>
-            </Box>
-            {idx < messages.length - 1 && 
-              <Box 
-                sx={{ 
-                  borderBottom: '1px solid',
-                  borderColor: 'rgba(59, 130, 246, 0.1)',
-                  my: 2
-                }} 
-              />
-            }
-          </React.Fragment>
-        ))}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      <Box 
-        component="form" 
-        onSubmit={handleSendMessage} 
-        sx={{ 
-          p: 3, 
-          borderTop: 1, 
-          borderColor: 'rgba(59, 130, 246, 0.1)',
-          bgcolor: 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(8px)'
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type a message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading || isSessionLoading}
-            autoComplete="off"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'white',
-                border: '2px solid #e5e7eb',
-                color: '#000000',
-                '&:hover': {
-                  border: '2px solid #3b82f6',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3b82f6',
-                    borderWidth: '2px'
-                  },
-                },
-                '&.Mui-focused': {
-                  border: '2px solid #3b82f6',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3b82f6',
-                    borderWidth: '2px'
-                  },
-                },
-              },
-              '& .MuiOutlinedInput-input': {
-                color: '#000000',
-                '&::placeholder': {
-                  color: '#6b7280',
-                  opacity: 1
-                }
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderWidth: '2px',
-                borderColor: '#e5e7eb'
-              }
-            }}
-          />
-          <IconButton
-            type="submit"
-            disabled={isLoading || isSessionLoading || !input.trim()}
-            sx={{ 
-              ml: 1, 
-              p: '12px',
-              bgcolor: '#3b82f6',
-              color: 'white',
-              '&:hover': {
-                bgcolor: '#2563eb',
-              },
-              '&.Mui-disabled': {
-                bgcolor: '#e5e7eb',
-                color: '#9ca3af'
-              }
-            }}
-            aria-label="send message"
-          >
-            <SendIcon />
-          </IconButton>
-        </Box>
-      </Box>
-    </Paper>
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background-color: rgba(59, 130, 246, 0.5);
+          border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+      `}</style>
     </div>
   );
 };
