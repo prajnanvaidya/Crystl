@@ -55,12 +55,12 @@ app.use(
   })
 );
 app.use(helmet());
-app.use(
-  rateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // Limit each IP to 200 requests per windowMs
-  })
-);
+// app.use(
+//   rateLimiter({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 200, // Limit each IP to 200 requests per windowMs
+//   })
+// );
 
 // --- Core Express Middleware ---
 app.use(morgan('dev')); // Use morgan for logging in development
