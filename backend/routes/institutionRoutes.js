@@ -17,7 +17,7 @@ const {
 const {
   linkDepartment,
   uploadReportAndTransactions,
-  getLinkedDepartments,getReports,
+  getLinkedDepartments,getReports,getSpendingAnomalies
 } = require('../controllers/institutionController');
 
 
@@ -50,5 +50,10 @@ router.get(
   '/reports',
   [authenticateUser, authorizePermissions('Institution')], // Protected route
   getReports // Points to our new controller function
+);
+router.get(
+  '/anomalies',
+  [authenticateUser, authorizePermissions('Institution')],
+  getSpendingAnomalies
 );
 module.exports = router;

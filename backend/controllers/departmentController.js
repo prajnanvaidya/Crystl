@@ -2,14 +2,15 @@
 
 const Department = require('../models/Department');
 const Transaction = require('../models/Transaction');
+const DepartmentTransaction = require('../models/DepartmentTransaction');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
-const { checkPermissions } = require('../utils'); // We'll use this utility
-const DepartmentTransaction = require('../models/DepartmentTransaction');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { checkAndLogAnomaly } = require('../utils/anomalyDetector'); // Import the anomaly checker
+
 // =============================================
-// ==      GET ALL PENDING TRANSACTIONS       ==
+// ==         AI HELPER FUNCTIONS             ==
 // =============================================
 
 async function getRawTextFromFile(fileBuffer, mimeType) {
@@ -63,6 +64,10 @@ async function structureSpendingWithLLM(rawText) {
     throw new Error('The AI model returned an invalid data structure.');
   }
 }
+
+// =============================================
+// ==      GET ALL PENDING TRANSACTIONS       ==
+// =============================================
 const getPendingTransactions = async (req, res) => {
   // The department's MongoDB _id is on req.user from the authentication middleware
   const departmentId = req.user.userId;
@@ -100,7 +105,6 @@ const verifyTransaction = async (req, res) => {
 
   // --- SECURITY CHECK ---
   // Ensure the transaction actually belongs to the department trying to verify it.
-  // This prevents one department from accidentally (or maliciously) verifying another's transactions.
   if (transaction.department.toString() !== departmentId) {
      throw new CustomError.UnauthorizedError('You are not authorized to verify this transaction.');
   }
@@ -114,8 +118,26 @@ const verifyTransaction = async (req, res) => {
   transaction.status = status;
   await transaction.save();
 
+  // --- FIX APPLIED HERE ---
+  // If the transaction was successfully approved, its amount is now part of the
+  // department's official budget. We MUST re-run the anomaly check now.
+  if (status === 'completed') {
+    try {
+      console.log(`Transaction ${transactionId} approved. Triggering anomaly check...`);
+      // We get the institutionId directly from the transaction object we just saved.
+      await checkAndLogAnomaly(departmentId, transaction.institution);
+    } catch (anomalyError) {
+      // Log the error but don't stop the request. The user's action was successful.
+      console.error('Anomaly detection failed after transaction verification:', anomalyError);
+    }
+  }
+
   res.status(StatusCodes.OK).json({ msg: `Transaction successfully updated to '${status}'`, transaction });
 };
+
+// =============================================
+// ==    UPLOAD DEPARTMENT SPENDING REPORT    ==
+// =============================================
 const uploadDepartmentSpendingReport = async (req, res) => {
   // 1. Validate Input
   const { reportName } = req.body; // A simple name for this upload
@@ -127,18 +149,12 @@ const uploadDepartmentSpendingReport = async (req, res) => {
   }
 
   const departmentId = req.user.userId;
-    const department = await Department.findById(departmentId);
+  const department = await Department.findById(departmentId);
   if (!department) {
     throw new CustomError.NotFoundError('Department not found.');
   }
   
-  // 3. Check the linkedInstitution from the FRESHLY fetched document, not the stale cookie
   const institutionId = department.linkedInstitution;
-  if (!institutionId) {
-    throw new CustomError.BadRequestError('Your department must be linked to an institution to log spending.');
-  }
-  //const institutionId = req.user.linkedInstitution;
-
   if (!institutionId) {
     throw new CustomError.BadRequestError('Your department must be linked to an institution to log spending.');
   }
@@ -174,8 +190,17 @@ const uploadDepartmentSpendingReport = async (req, res) => {
     if (transactionsToCreate.length === 0) {
       throw new CustomError.BadRequestError('The file was processed, but no valid transactions could be logged.');
     }
-
+    
+    // First, save the new spending records to the database
     await DepartmentTransaction.insertMany(transactionsToCreate);
+
+    // AFTER saving, trigger the anomaly check in the background.
+    try {
+      await checkAndLogAnomaly(departmentId, institutionId);
+    } catch (anomalyError) {
+      console.error('Anomaly detection process failed after spending upload:', anomalyError);
+      // We don't re-throw the error, we just log it. The user's upload was successful.
+    }
 
     res.status(StatusCodes.CREATED).json({
       msg: `Report '${reportName}' processed successfully. ${transactionsToCreate.length} expenses have been logged.`
@@ -186,6 +211,7 @@ const uploadDepartmentSpendingReport = async (req, res) => {
     throw error;
   }
 };
+
 module.exports = {
   getPendingTransactions,
   verifyTransaction,

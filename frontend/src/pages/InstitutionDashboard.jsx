@@ -1,4 +1,4 @@
-// src/pages/InstitutionDashboard.jsx - COMPLETE with Enhanced Shadows
+// src/pages/InstitutionDashboard.jsx - COMPLETE with Anomaly Detection Feature
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,8 @@ import {
   PieChart as PieChartIcon,
   TrendingUp,
   Fullscreen as FullscreenIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  WarningAmber as WarningIcon, // <-- Icon for anomalies
 } from '@mui/icons-material';
 import { CloudUploadIcon } from '@heroicons/react/solid';
 
@@ -24,13 +25,14 @@ import DepartmentPieChart from '../components/charts/DepartmentPieChart';
 import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
 const InstitutionDashboard = () => {
-  // --- STATE MANAGEMENT (No changes to logic) ---
+  // --- STATE MANAGEMENT ---
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [linkedDepartments, setLinkedDepartments] = useState([]);
   const [reports, setReports] = useState([]);
+  const [anomalies, setAnomalies] = useState([]); // <-- NEW STATE FOR ANOMALIES
   const [selectedReport, setSelectedReport] = useState(null);
   const [analyticsData, setAnalyticsData] = useState({ flowchart: null, departmentShare: null, spendingTrend: null });
   const [trendGroupBy, setTrendGroupBy] = useState('monthly');
@@ -43,7 +45,7 @@ const InstitutionDashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fullscreenContent, setFullscreenContent] = useState({ open: false, title: '', ChartComponent: null });
 
-  // --- DATA FETCHING (No changes to logic) ---
+  // --- DATA FETCHING (Now includes anomalies) ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -51,9 +53,16 @@ const InstitutionDashboard = () => {
       try {
         const departmentsPromise = api.get('/institution/linked-departments');
         const reportsPromise = api.get('/institution/reports');
-        const [departmentsRes, reportsRes] = await Promise.all([departmentsPromise, reportsPromise]);
+        const anomaliesPromise = api.get('/institution/anomalies'); // Fetch anomalies
+
+        const [departmentsRes, reportsRes, anomaliesRes] = await Promise.all([
+          departmentsPromise,
+          reportsPromise,
+          anomaliesPromise,
+        ]);
         setLinkedDepartments(departmentsRes.data.departments);
         setReports(reportsRes.data.reports);
+        setAnomalies(anomaliesRes.data.anomalies); // Set anomaly state
       } catch (err) {
         setError(err.response?.data?.msg || 'Failed to load initial dashboard data.');
       } finally {
@@ -97,8 +106,12 @@ const InstitutionDashboard = () => {
         headers: { 'Content-Type': 'multipart/form-data' } 
       });
       setSuccess(data.msg);
-      const response = await api.get('/institution/reports');
-      setReports(response.data.reports);
+      // Refetch reports AND anomalies after a successful upload
+      const reportsRes = await api.get('/institution/reports');
+      const anomaliesRes = await api.get('/institution/anomalies');
+      setReports(reportsRes.data.reports);
+      setAnomalies(anomaliesRes.data.anomalies);
+
       setIsModalOpen(false);
       setNewReportName('');
       setNewReportDate('');
@@ -158,7 +171,7 @@ const InstitutionDashboard = () => {
   };
 
 
-  // --- RENDER LOGIC (Visually Upgraded) ---
+  // --- RENDER LOGIC ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -195,7 +208,38 @@ const InstitutionDashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <aside className="lg:col-span-4 xl:col-span-3 space-y-8">
-            {/* --- CHANGE #1: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            
+            {/* --- NEW ANOMALY CARD --- */}
+            <div className="bg-white rounded-xl border-2 border-red-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
+                <WarningIcon className="mr-2 text-red-500" />
+                Spending Alerts
+              </h3>
+              <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
+                {anomalies.length > 0 ? (
+                  anomalies.map((anomaly) => (
+                    <div
+                      key={anomaly._id}
+                      className="bg-red-50 border border-red-200 p-3 rounded-lg"
+                    >
+                      <p className="text-sm font-medium text-red-800">
+                        {anomaly.message}
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Detected on: {new Date(anomaly.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <WarningIcon className="mx-auto text-green-400 mb-2" style={{ fontSize: '2.5rem' }} />
+                    <p>No spending anomalies detected. All departments are within budget.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* --- Submitted Reports Card --- */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><DescriptionIcon className="mr-2 text-blue-600" />Submitted Reports</h3>
               <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
@@ -208,7 +252,7 @@ const InstitutionDashboard = () => {
               </div>
             </div>
 
-            {/* --- CHANGE #2: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            {/* --- Link a Department Card --- */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><LinkIcon className="mr-2 text-blue-600" />Link a Department</h3>
               <form onSubmit={handleLinkDepartment} className="space-y-3">
@@ -217,7 +261,7 @@ const InstitutionDashboard = () => {
               </form>
             </div>
             
-            {/* --- CHANGE #3: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
+            {/* --- Linked Departments Card --- */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><BusinessIcon className="mr-2 text-blue-600" />Linked Departments</h3>
               <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
@@ -230,7 +274,6 @@ const InstitutionDashboard = () => {
 
           {/* RIGHT COLUMN (ANALYTICS) */}
           <section className="lg:col-span-8 xl:col-span-9">
-            {/* --- CHANGE #4: ADDED BETTER SHADOWS AND INTERACTIVITY --- */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[80vh] shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               {!selectedReport ? (
                 <div className="flex flex-col justify-center items-center h-full text-gray-400 text-center"><BarChartIcon style={{ fontSize: '4rem', marginBottom: '1rem' }} /><h3 className="text-xl font-semibold text-gray-600">Analytics Dashboard</h3><p className="mt-2 max-w-md">Please select a report from the list on the left to visualize its financial data.</p></div>
@@ -250,7 +293,7 @@ const InstitutionDashboard = () => {
         </div>
       </main>
 
-      {/* --- MODAL (unchanged but restyled for completeness) --- */}
+      {/* --- MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setIsModalOpen(false)}>
           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl transform transition-all" onClick={(e) => e.stopPropagation()}>
@@ -274,7 +317,7 @@ const InstitutionDashboard = () => {
         </div>
       )}
 
-      {/* --- FULLSCREEN DIALOG (unchanged but restyled for completeness) --- */}
+      {/* --- FULLSCREEN DIALOG --- */}
       {fullscreenContent.open && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
           <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
