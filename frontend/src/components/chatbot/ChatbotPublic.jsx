@@ -14,7 +14,10 @@ const ChatbotPublic = ({ institutionId }) => {
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      const messageContainer = messagesEndRef.current.parentElement;
+      messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
   };
 
   const fetchSession = useCallback(async () => {

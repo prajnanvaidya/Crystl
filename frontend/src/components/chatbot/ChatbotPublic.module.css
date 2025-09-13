@@ -2,11 +2,12 @@
 .chatContainer {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100% - 50px); /* Subtract header height */
   width: 100%;
   background-color: #ffffff;
   font-family: sans-serif;
   overflow: hidden;
+  position: relative;
 }
 
 .messagesArea {
@@ -17,6 +18,8 @@
   flex-direction: column;
   gap: 12px;
   background-color: #f9fafb;
+  max-height: calc(100% - 61px); /* Subtract input area height */
+  position: relative;
 }
 
 .messageBubbleUser, .messageBubbleBot {
