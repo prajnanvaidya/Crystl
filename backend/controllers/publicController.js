@@ -4,7 +4,7 @@ const Institution = require('../models/Institution');
 const Transaction = require('../models/Transaction');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
-
+const Report = require('../models/Report');
 // =============================================
 // ==      GET A LIST OF ALL INSTITUTIONS     ==
 // =============================================
@@ -59,8 +59,43 @@ const searchTransactions = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ count: transactions.length, transactions });
 };
+const getInstitutionDetails = async (req, res) => {
+  const { institutionId } = req.params;
+  const institution = await Institution.findById(institutionId).select('name');
+  if (!institution) {
+    throw new CustomError.NotFoundError(`No institution found with id: ${institutionId}`);
+  }
+  res.status(StatusCodes.OK).json({ institution });
+};
 
+// Controller to get a public list of linked departments for a specific institution
+const getPublicLinkedDepartments = async (req, res) => {
+  const { institutionId } = req.params;
+  const institution = await Institution.findById(institutionId)
+    .populate({
+      path: 'linkedDepartments',
+      select: 'name' // Publicly expose only the department's name and _id
+    });
+  
+  if (!institution) {
+    throw new CustomError.NotFoundError(`No institution found with id: ${institutionId}`);
+  }
+  res.status(StatusCodes.OK).json({ departments: institution.linkedDepartments });
+};
+
+// Controller to get a public list of reports for a specific institution
+const getPublicReports = async (req, res) => {
+  const { institutionId } = req.params;
+  const reports = await Report.find({ institution: institutionId })
+    .sort('-reportDate')
+    .select('name type reportDate'); // Only expose non-sensitive fields
+  
+  res.status(StatusCodes.OK).json({ reports });
+};
 module.exports = {
+      getInstitutionDetails,
+  getPublicLinkedDepartments,
+  getPublicReports,
   getAllInstitutions,
   searchTransactions,
 };

@@ -16,7 +16,7 @@ import InstitutionExplorerPage from './pages/InstitutionExplorerPage';
 import PublicInstitutionPage from './pages/PublicInstitutionPage';
 import UserDashboard from './pages/UserDashboard';
 import ChatPage from './pages/ChatPage';
-
+import ChatRoom from './pages/ChatRoom';
 function App() {
   const { user, isLoading } = useAuth();
 
@@ -90,6 +90,14 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/chat/:conversationId"
+            element={
+              <PrivateRoute roles={['User']}>
+                <ChatRoom />
+              </PrivateRoute>
+            }
+            />
         </Route>
       </Routes>
     </Router>

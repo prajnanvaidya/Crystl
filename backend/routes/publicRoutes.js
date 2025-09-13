@@ -5,11 +5,15 @@ const router = express.Router();
 
 // Import all the public-facing controller functions
 const { getFlowchartData } = require('../controllers/flowchartController');
-const { getAllInstitutions, searchTransactions } = require('../controllers/publicController');
+const { getAllInstitutions, searchTransactions,getInstitutionDetails,
+  getPublicLinkedDepartments,
+  getPublicReports } = require('../controllers/publicController');
 const { getSpendingTrend, getDepartmentShare } = require('../controllers/analyticsController');
 // --- DEFINE THE PUBLIC ROUTES ---
 // These endpoints are public and do not require any authentication.
-
+router.get('/institution/:institutionId/details', getInstitutionDetails);
+router.get('/institution/:institutionId/departments', getPublicLinkedDepartments);
+router.get('/institution/:institutionId/reports', getPublicReports);
 // Route for the main visualization
 router.get('/flowchart/:institutionId', getFlowchartData);
 
@@ -22,5 +26,6 @@ router.get('/institutions', getAllInstitutions);
 router.get('/institution/:institutionId/transactions', searchTransactions);
 router.get('/analytics/:institutionId/department-share', getDepartmentShare);
 router.get('/analytics/:institutionId/spending-trend', getSpendingTrend);
+
 
 module.exports = router;
