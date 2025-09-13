@@ -1,6 +1,9 @@
+// src/pages/DepartmentDashboard.jsx - FULLY UPDATED AND COMPLETE
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { getErrorMessage } from '../services/errorHandler'; // <-- CHANGE #1: Import the helper
 import {
   Container,
   Typography,
@@ -21,85 +24,73 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
-import { CheckCircleOutline, ErrorOutline, ContentCopy, Assessment, PendingActions } from '@mui/icons-material';
+// CHANGE #2: Imported ReportProblem icon for better error display
+import { CheckCircleOutline, ReportProblem, ContentCopy, Assessment, PendingActions } from '@mui/icons-material';
 
-// --- Re-usable Chart Components ---
-// These are assumed to be in the specified paths and are fully functional.
+// --- (All chart components are assumed to be correctly imported) ---
 import SankeyChart from '../components/charts/SankeyChart';
 import DepartmentPieChart from '../components/charts/DepartmentPieChart';
 import SpendingTrendChart from '../components/charts/SpendingTrendChart';
 
-// ==================================================================================
-// ==                         MAIN DASHBOARD COMPONENT                             ==
-// ==================================================================================
 const DepartmentDashboard = () => {
-  // --- STATE MANAGEMENT ---
-  const { user } = useAuth(); // Logged-in department's details from AuthContext.
-  const [currentTab, setCurrentTab] = useState(0); // 0 for Approvals, 1 for Analytics.
-
-  // --- State for the "Approvals" Tab ---
+  // --- (All state management remains exactly the same) ---
+  const { user } = useAuth();
+  const [currentTab, setCurrentTab] = useState(0);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [isApprovalsLoading, setIsApprovalsLoading] = useState(true);
-  const [actionInProgress, setActionInProgress] = useState(null); // Holds the ID of the transaction being updated.
-
-  // --- State for the "Analytics" Tab ---
+  const [actionInProgress, setActionInProgress] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-  const [trendGroupBy, setTrendGroupBy] = useState('monthly'); // Filter state for the trend chart.
-
-  // --- General Feedback State ---
+  const [trendGroupBy, setTrendGroupBy] = useState('monthly');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // --- DATA FETCHING ---
-  // Fetch pending transactions on initial component load.
+  // --- DATA FETCHING (with updated catch blocks) ---
   useEffect(() => {
     const fetchPendingTransactions = async () => {
       setIsApprovalsLoading(true);
+      setError(''); // Clear previous errors
       try {
         const { data } = await api.get('/department/pending-transactions');
         setPendingTransactions(data.transactions);
       } catch (err) {
-        setError(err.response?.data?.msg || 'Failed to fetch pending approvals.');
+        // CHANGE #3: Use the helper for a more specific error message
+        setError(getErrorMessage(err, 'Failed to fetch pending approvals.'));
       } finally {
         setIsApprovalsLoading(false);
       }
     };
     fetchPendingTransactions();
-  }, []); // Empty dependency array ensures this runs only once.
+  }, []);
 
-  // Fetch analytics data when the user switches to the analytics tab or changes the trend filter.
   useEffect(() => {
     const fetchAnalytics = async () => {
-      // Proceed only if the analytics tab is active and the department is linked.
       if (currentTab === 1 && user?.linkedInstitution) {
         setIsAnalyticsLoading(true);
         setError('');
         try {
           const institutionId = user.linkedInstitution;
-          // Fetch all analytics data concurrently for performance.
           const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
           const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
           const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
-          
           const [flowchartRes, deptShareRes, trendRes] = await Promise.all([flowchartPromise, deptSharePromise, spendingTrendPromise]);
-          
           setAnalyticsData({
             flowchart: flowchartRes.data,
             departmentShare: deptShareRes.data.departmentShares,
             spendingTrend: trendRes.data.spendingTrend,
           });
         } catch (err) {
-          setError('Could not load institution analytics.');
+          // CHANGE #4: Use the helper for a more specific error message
+          setError(getErrorMessage(err, 'Could not load institution analytics.'));
         } finally {
           setIsAnalyticsLoading(false);
         }
       }
     };
     fetchAnalytics();
-  }, [currentTab, user, trendGroupBy]); // Re-run this effect if any of these values change.
+  }, [currentTab, user, trendGroupBy]);
 
-  // --- HANDLERS ---
+  // --- HANDLERS (with updated catch blocks) ---
   const handleTabChange = (event, newValue) => setCurrentTab(newValue);
 
   const handleVerifyTransaction = async (transactionId, newStatus) => {
@@ -109,10 +100,10 @@ const DepartmentDashboard = () => {
     try {
       await api.patch(`/department/verify-transaction/${transactionId}`, { status: newStatus });
       setSuccess(`Transaction successfully marked as ${newStatus}.`);
-      // Update UI immediately for a better user experience.
       setPendingTransactions(prev => prev.filter(t => t._id !== transactionId));
     } catch (err) {
-      setError(err.response?.data?.msg || `Failed to update transaction.`);
+      // CHANGE #5: Use the helper for a more specific error message
+      setError(getErrorMessage(err, 'Failed to update transaction.'));
     } finally {
       setActionInProgress(null);
     }
@@ -132,14 +123,15 @@ const DepartmentDashboard = () => {
     }
   };
 
-  // --- RENDER LOGIC ---
+  // --- RENDER LOGIC (with updated feedback displays) ---
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>Department Dashboard</Typography>
       <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>{user?.name}</Typography>
 
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {/* CHANGE #6: Added dismissible functionality to the alerts for better UX */}
+      {success && <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>{success}</Alert>}
+      {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
 
       <Paper sx={{ bgcolor: '#1E1E1E', p: { xs: 1, sm: 2, md: 3 } }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -149,7 +141,6 @@ const DepartmentDashboard = () => {
           </Tabs>
         </Box>
 
-        {/* --- Approvals Tab Panel --- */}
         {currentTab === 0 && (
           <Box sx={{ pt: 3 }}>
             {isApprovalsLoading ? <CircularProgress /> : (
@@ -157,6 +148,7 @@ const DepartmentDashboard = () => {
                 <Grid item xs={12} md={8}>
                   {pendingTransactions.length > 0 ? (
                     <List sx={{ p: 0 }}>
+                      {/* (This mapping logic remains unchanged) */}
                       {pendingTransactions.map((transaction) => (
                         <ListItem key={transaction._id} sx={{ px: 0, py: 1 }}>
                           <Card variant="outlined" sx={{ width: '100%', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
@@ -178,14 +170,24 @@ const DepartmentDashboard = () => {
                       ))}
                     </List>
                   ) : (
-                    <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                      <CheckCircleOutline color="success" sx={{ fontSize: 48, mb: 2 }} />
-                      <Typography variant="h6">All Clear!</Typography>
-                      <Typography color="text.secondary">You have no pending transactions to review.</Typography>
-                    </Paper>
+                    // CHANGE #7: Added logic to show a styled error here if loading fails, otherwise show the "All Clear" message.
+                    error ? (
+                        <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255, 82, 82, 0.1)', color: 'error.light' }}>
+                            <ReportProblem color="error" sx={{ fontSize: 48, mb: 2 }} />
+                            <Typography variant="h6">Could Not Load Approvals</Typography>
+                            <Typography>{error}</Typography>
+                        </Paper>
+                    ) : (
+                        <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+                            <CheckCircleOutline color="success" sx={{ fontSize: 48, mb: 2 }} />
+                            <Typography variant="h6">All Clear!</Typography>
+                            <Typography color="text.secondary">You have no pending transactions to review.</Typography>
+                        </Paper>
+                    )
                   )}
                 </Grid>
                 <Grid item xs={12} md={4}>
+                   {/* (This part remains unchanged) */}
                    <Paper sx={{ p: 2.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
                       <Typography variant="subtitle1" gutterBottom>Your Department ID</Typography>
                       <Divider sx={{ my: 1.5 }} />
@@ -199,29 +201,14 @@ const DepartmentDashboard = () => {
           </Box>
         )}
 
-        {/* --- Analytics Tab Panel --- */}
         {currentTab === 1 && (
           <Box sx={{ pt: 3 }}>
+            {/* (This analytics tab logic remains unchanged) */}
             {isAnalyticsLoading ? <CircularProgress /> : analyticsData ? (
               <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom>Fund Flow</Typography>
-                    <SankeyChart data={analyticsData.flowchart} />
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom>Spending by Department</Typography>
-                    <DepartmentPieChart data={analyticsData.departmentShare} />
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h6" gutterBottom>Spending Trend</Typography>
-                    <SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} />
-                  </Paper>
-                </Grid>
+                <Grid item xs={12}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Fund Flow</Typography><SankeyChart data={analyticsData.flowchart} /></Paper></Grid>
+                <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Spending by Department</Typography><DepartmentPieChart data={analyticsData.departmentShare} /></Paper></Grid>
+                <Grid item xs={12} md={6}><Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)' }}><Typography variant="h6" gutterBottom>Spending Trend</Typography><SpendingTrendChart data={analyticsData.spendingTrend} groupBy={trendGroupBy} handleFilterChange={handleTrendFilterChange} /></Paper></Grid>
               </Grid>
             ) : (
               <Typography>No analytics to display. Make sure you are linked to an institution.</Typography>
