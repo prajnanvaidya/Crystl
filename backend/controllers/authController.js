@@ -10,12 +10,32 @@ const crypto = require('crypto'); // To generate a unique department ID
 
 // --- HELPER FUNCTION TO CREATE A TOKEN USER ---
 // This prevents us from repeating code for each user type
-const createGenericTokenUser = (user) => {
-  // We need to know the model to check the role later
-  const modelName = user.constructor.modelName; // 'Institution', 'Department', or 'User'
-  return { name: user.name, userId: user._id, role: modelName };
-};
+// server/controllers/authController.js
 
+// --- HELPER FUNCTION TO CREATE A TOKEN USER ---
+// Replace your existing function with this one.
+const createGenericTokenUser = (user) => {
+  // Get the Mongoose model name ('Institution', 'Department', or 'User')
+  const modelName = user.constructor.modelName;
+
+  // 1. Create the base token user object that works for EVERYONE.
+  const tokenUser = {
+    name: user.name,
+    userId: user._id,
+    role: modelName,
+  };
+
+  // 2. Conditionally add extra properties for specific roles.
+  // This is the key part: it adds the ID if it's a department,
+  // but doesn't stop the function from working for institutions or users.
+  if (modelName === 'Department') {
+    tokenUser.departmentId = user.departmentId;
+    tokenUser.linkedInstitution = user.linkedInstitution; 
+  }
+
+  // 3. ALWAYS return the tokenUser object.
+  return tokenUser;
+};
 
 // =============================================
 // ==         INSTITUTION AUTH                ==

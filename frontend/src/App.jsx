@@ -7,7 +7,11 @@ import { CircularProgress, Box } from '@mui/material';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import InstitutionDashboard from './pages/InstitutionDashboard';
 import RegisterPage from './pages/RegisterPage';
+import DepartmentDashboard from './pages/DepartmentDashboard';
+import InstitutionExplorerPage from './pages/InstitutionExplorerPage';
+import PublicInstitutionPage from './pages/PublicInstitutionPage';
 // import Dashboard from './pages/Dashboard';
 
 // A simple component to protect routes
@@ -37,6 +41,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+ <Route path="/institutions" element={<InstitutionExplorerPage />} />
+          <Route path="/institution/:institutionId" element={<PublicInstitutionPage />} />
 
           {/* Private/Protected Route */}
           <Route
@@ -44,6 +50,22 @@ function App() {
             element={
               <PrivateRoute>
                 <div>Dashboard Placeholder</div>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/department"
+            element={
+              <PrivateRoute roles={['Department']}>
+                <DepartmentDashboard /> {/* <--- REPLACE THE DIV WITH THE COMPONENT */}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/institution"
+            element={
+              <PrivateRoute roles={['Institution']}>
+                <InstitutionDashboard />
               </PrivateRoute>
             }
           />

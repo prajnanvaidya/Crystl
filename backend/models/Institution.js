@@ -31,9 +31,9 @@ const InstitutionSchema = new mongoose.Schema({
 });
 
 // Middleware to hash the password before saving the document
-InstitutionSchema.pre('save', async function () {
+InstitutionSchema.pre('save', async function (next) {
   // This check prevents re-hashing if the password hasn't been modified
-  if (!this.isModified('password')) return;
+  if (!this.isModified('password')) return next();;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

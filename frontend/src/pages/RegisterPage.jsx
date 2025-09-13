@@ -28,10 +28,29 @@ const RegisterPage = () => {
       return;
     }
 
-    try {
-      await register(role, { name, email, password });
-      navigate('/dashboard');
-    } catch (err) {
+      try {
+    // --- START OF THE FIX ---
+    // 1. Capture the user object that is now returned from the register function
+    const user = await register(role, { name, email, password });
+
+    // 2. Use the user's role to navigate to the correct dashboard
+    switch (user.role) {
+      case 'Institution':
+        navigate('/dashboard/institution');
+        break;
+      case 'Department':
+        // Assuming you will create a '/dashboard/department' route
+        navigate('/dashboard/department');
+        break;
+      case 'User':
+         // Assuming you will create a '/dashboard/user' route
+        navigate('/dashboard/user');
+        break;
+      default:
+        // A safe fallback to the homepage
+        navigate('/');
+        break;
+    }} catch (err) {
       const errorMessage = err.response?.data?.msg || 'Registration failed. Please try again.';
       setError(errorMessage);
     } finally {

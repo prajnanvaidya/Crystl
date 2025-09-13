@@ -20,8 +20,29 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      await login(role, { email, password });
-      navigate('/dashboard');
+      // The login function in AuthContext will return the user object upon success
+      const user = await login(role, { email, password });
+      
+      // --- NEW REDIRECTION LOGIC ---
+      // After a successful login, inspect the user's role to navigate them
+      // to the correct dashboard.
+      switch (user.role) {
+        case 'Institution':
+          navigate('/dashboard/institution');
+          break;
+        case 'Department':
+          navigate('/dashboard/department');
+          break;
+        case 'User':
+          navigate('/dashboard/user');
+          break;
+        default:
+          // Fallback to a generic dashboard or homepage if role is unknown
+          navigate('/');
+          break;
+      }
+      // --- END OF NEW LOGIC ---
+
     } catch (err) {
       const errorMessage = err.response?.data?.msg || 'Login failed. Please try again.';
       setError(errorMessage);

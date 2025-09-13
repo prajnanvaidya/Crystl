@@ -5,6 +5,7 @@ const CustomError = require('../errors');
 const Institution = require('../models/Institution');
 const Transaction = require('../models/Transaction');
 const Department = require('../models/Department');
+const Report = require('../models/Report');
 
 // --- AI Service Imports ---
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
@@ -111,40 +112,73 @@ async function structureTextWithLLM(rawText) {
 // =============================================
 // ==      MAIN CONTROLLER FUNCTION           ==
 // =============================================
-const uploadTransactions = async (req, res) => {
-  if (!req.file) {
-    throw new CustomError.BadRequestError('No file uploaded.');
+const uploadReportAndTransactions = async (req, res) => {
+  // --- 1. VALIDATE INPUT ---
+  // Get metadata for the Report from the request body (form-data)
+  const { name, type, reportDate } = req.body;
+  const institutionId = req.user.userId; // From auth middleware
+
+  if (!name || !type || !reportDate) {
+    throw new CustomError.BadRequestError('Please provide all required report details: name, type, and date.');
   }
-
-  const institutionId = req.user.userId;
-
+  if (!req.file) {
+    throw new CustomError.BadRequestError('No transaction file was uploaded.');
+  }
+  
+  // --- 2. CREATE THE REPORT DOCUMENT ---
+  // We create the report first. If the AI processing fails later, we will delete it.
+  let report;
   try {
-    // --- STEP 1: Get Raw Text (from either PDF or CSV) ---
-    const rawText = await getRawTextFromFile(req.file.buffer, req.file.mimetype);
+    report = await Report.create({
+      name,
+      type,
+      reportDate: new Date(reportDate),
+      institution: institutionId,
+      // Optional: Add logic here to upload the original file to cloud storage and save the URL
+      // originalFileUrl: 'https://storage.googleapis.com/...',
+    });
+  } catch (error) {
+    throw new CustomError.InternalServerError(`Failed to create report document: ${error.message}`);
+  }
+  
+  const reportId = report._id; // Get the ID of the report we just created
 
-    // --- STEP 2: Structure the Text with the LLM ---
+  // --- 3. PROCESS THE FILE WITH THE AI PIPELINE ---
+  try {
+    // Get raw text from the file buffer (works for both PDF and CSV)
+    const rawText = await getRawTextFromFile(req.file.buffer, req.file.mimetype);
+    
+    // Use the LLM to structure the raw text into clean JSON
     const parsedData = await structureTextWithLLM(rawText);
 
     if (!parsedData || parsedData.length === 0) {
+      // If AI processing yields no results, delete the empty report to keep the DB clean
+      await Report.findByIdAndDelete(reportId);
       throw new CustomError.BadRequestError('The AI could not identify any valid transactions in the uploaded file.');
     }
-    console.log(`Successfully parsed ${parsedData.length} transactions via AI.`);
+    console.log(`AI successfully parsed ${parsedData.length} transactions from report '${name}'.`);
 
-    // --- STEP 3: LOGGING TO DATABASE ---
+    // --- 4. CREATE TRANSACTION DOCUMENTS, LINKING EACH TO THE REPORT ---
     let transactionsCreated = 0;
-    for (const row of parsedData) {
+    
+    // We use Promise.all to handle database operations concurrently for better performance
+    const transactionCreationPromises = parsedData.map(async (row) => {
       const { department_name, amount, vendor, description, date } = row;
+
+      // Basic validation for each row from the AI
       if (!department_name || !amount || !description || !date) {
-        console.warn('Skipping invalid row from AI data:', row);
-        continue;
+        console.warn('Skipping row with missing required data from AI:', row);
+        return; // Skip this iteration of the map
       }
 
-      const department = await Department.findOne({ name: department_name });
+      // Find the corresponding department document to get its _id
+      const department = await Department.findOne({ name: department_name, linkedInstitution: institutionId });
       if (!department) {
-        console.warn(`Department not found: ${department_name}. Skipping transaction.`);
-        continue;
+        console.warn(`Department named '${department_name}' not found or not linked to this institution. Skipping transaction.`);
+        return; // Skip if department doesn't exist or isn't linked
       }
 
+      // Create the transaction document
       await Transaction.create({
         amount: parseFloat(amount),
         vendor,
@@ -153,17 +187,30 @@ const uploadTransactions = async (req, res) => {
         status: 'pending_approval',
         institution: institutionId,
         department: department._id,
+        report: reportId, // <-- THE CRUCIAL LINK
       });
       transactionsCreated++;
+    });
+
+    await Promise.all(transactionCreationPromises);
+
+    if (transactionsCreated === 0) {
+      // Handle the case where the file was valid but no rows could be processed (e.g., all departments were wrong)
+      await Report.findByIdAndDelete(reportId);
+      throw new CustomError.BadRequestError('The file was processed, but no valid transactions could be logged. Please check department names.');
     }
 
     res.status(StatusCodes.CREATED).json({
-      msg: `File processed successfully. ${transactionsCreated} transactions are now pending approval.`
+      msg: `Report '${name}' created successfully. ${transactionsCreated} transactions are now pending approval.`
     });
 
   } catch (error) {
-    console.error('Error in uploadTransactions:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: error.message || 'An unexpected error occurred during file processing.' });
+    // If anything in the AI pipeline or transaction creation fails, delete the report
+    if (reportId) {
+      await Report.findByIdAndDelete(reportId);
+    }
+    // Re-throw the error to be handled by the main error handler middleware
+    throw error;
   }
 };
 
@@ -195,8 +242,43 @@ const linkDepartment = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ msg: 'Department successfully linked!' });
 };
+const getLinkedDepartments = async (req, res) => {
+  // We get the institution's ID from req.user, which was set by the
+  // authentication middleware. This is secure because it comes from the JWT.
+  const institutionId = req.user.userId;
 
+  // Find the institution and use .populate() to automatically fetch the
+  // full document for each department ID in the 'linkedDepartments' array.
+  const institution = await Institution.findById(institutionId)
+    .populate({
+        path: 'linkedDepartments',
+        select: 'name departmentId' // We only need the name and unique ID for the list
+    });
+
+  if (!institution) {
+    throw new CustomError.NotFoundError('Institution not found.');
+  }
+
+  res.status(StatusCodes.OK).json({
+    departments: institution.linkedDepartments,
+  });
+};
+const getReports = async (req, res) => {
+  // The logged-in institution's ID comes securely from the auth middleware
+  const institutionId = req.user.userId;
+
+  // Find all reports where the 'institution' field matches the logged-in user's ID.
+  // We sort by -reportDate to show the most recent reports first.
+  const reports = await Report.find({ institution: institutionId }).sort('-reportDate');
+
+  res.status(StatusCodes.OK).json({
+    count: reports.length,
+    reports: reports,
+  });
+};
 module.exports = {
   linkDepartment,
-  uploadTransactions,
+  getLinkedDepartments,
+  uploadReportAndTransactions,
+  getReports,
 };

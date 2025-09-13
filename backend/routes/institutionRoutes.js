@@ -16,7 +16,8 @@ const {
 // Import the controller functions that contain the logic
 const {
   linkDepartment,
-  uploadTransactions,
+  uploadReportAndTransactions,
+  getLinkedDepartments,getReports,
 } = require('../controllers/institutionController');
 
 
@@ -37,8 +38,17 @@ router.post(
   '/upload-transactions',
   [authenticateUser, authorizePermissions('Institution')], // You can also pass middleware as an array
   upload.single('transactionsFile'),
-  uploadTransactions
+  uploadReportAndTransactions
 );
 
-
+router.get(
+  '/linked-departments',
+  [authenticateUser, authorizePermissions('Institution')], // This route is protected
+  getLinkedDepartments // It calls our new controller function
+);
+router.get(
+  '/reports',
+  [authenticateUser, authorizePermissions('Institution')], // Protected route
+  getReports // Points to our new controller function
+);
 module.exports = router;

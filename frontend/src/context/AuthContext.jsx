@@ -26,10 +26,12 @@ export const AuthProvider = ({ children }) => {
     checkLoggedInUser();
   }, []);
 
-  const login = async (role, credentials) => {
-    const response = await api.post(`/auth/${role}/login`, credentials);
-    setUser(response.data.user);
-  };
+const login = async (role, credentials) => {
+  const response = await api.post(`/auth/${role}/login`, credentials);
+  const user = response.data.user; // Get the user data
+  setUser(user); // Set the state for the rest of the app
+  return user;   // <-- RETURN the user data to the LoginPage
+};
 
   const register = async (role, details) => {
     const response = await api.post(`/auth/${role}/register`, details);

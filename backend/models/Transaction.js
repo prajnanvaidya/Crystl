@@ -36,7 +36,12 @@ const TransactionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
     required: true
-  }
+  },
+    report: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Report',
+    required: true,
+  },
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
 
 module.exports = mongoose.model('Transaction', TransactionSchema);

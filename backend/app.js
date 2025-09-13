@@ -34,7 +34,26 @@ const errorHandlerMiddleware = require('./middleware/error-handler');
 
 // --- Security Middleware Configuration ---
 // Note: In production, you'd set the origin to your frontend's actual domain.
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+const allowedOrigins = [
+    'http://localhost:3000', // The default for create-react-app
+    'http://localhost:5173'  // The default for Vite
+    // Add your deployed frontend URL here later, e.g., 'https://your-app.vercel.app'
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(
   rateLimiter({
