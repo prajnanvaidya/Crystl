@@ -172,9 +172,10 @@ const InstitutionDashboard = () => {
     setError('');
     try {
       const institutionId = user.userId;
-      const flowchartPromise = api.get(`/public/flowchart/${institutionId}`);
-      const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share`);
-      const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}`);
+      const reportId = report._id;
+      const flowchartPromise = api.get(`/public/flowchart/${institutionId}?reportId=${reportId}`);
+      const deptSharePromise = api.get(`/public/analytics/${institutionId}/department-share?reportId=${reportId}`);
+      const spendingTrendPromise = api.get(`/public/analytics/${institutionId}/spending-trend?groupBy=${trendGroupBy}&reportId=${reportId}`);
       const [flowchartRes, deptShareRes, spendingTrendRes] = await Promise.all([
         flowchartPromise, 
         deptSharePromise, 
