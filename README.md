@@ -10,9 +10,16 @@
 
 ---
 
-### 🚀 Live Demo & Video
+## 🚀 Live Demo & Video
 
-**Watch our video presentation to see Crystl in action!**
+| Live Application | Video Presentation |
+| :---: | :---: |
+| **[crystl.vercel.app](https://crystl.vercel.app/)** | **[Watch Video](https://drive.google.com/file/d/1WQvcB-11cOOVt3Plh-oaUhZMM1ctYdW5/view)** |
+| *Click the link above to explore the live project.* | *Click to watch our 3-minute demo video.* |
+
+*Use the "Explore Institutions" button on the homepage to view public financial data without needing to log in.*
+
+---
 
 <!--
     INSERT YOUR YOUTUBE/LOOM VIDEO LINK HERE
